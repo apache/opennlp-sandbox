@@ -1,0 +1,77 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_search.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpSearchStorageProto";
+option java_package = "org.apache.opennlp.grpc.v1";
+
+// On-disk storage records for persisted live search indexes. A checkpoint
+// directory holds the versioned properties descriptor next to a chunks.pb
+// file of length-delimited PersistedSearchChunk records and provider-owned
+// immutable vector segments. Format 3 stores vector references and digests,
+// so quantized providers do not retain a second raw-float representation.
+
+// The complete alias set, persisted as one local file with last write wins.
+message PersistedIndexAliases {
+  // Aliases in stable alias order.
+  repeated IndexAlias aliases = 1;
+}
+
+// One collection descriptor, persisted as one local collection.pb file with
+// last write wins. The wrapped descriptor's integrity_hash is the lowercase
+// SHA-256 of this message's bytes with that field cleared.
+message PersistedCollection {
+  // Version of the persisted collection record contract.
+  uint32 format_version = 1;
+  // The collection state at the last write, including its term statistics snapshot.
+  CollectionDescriptor collection = 2;
+}
+
+// One persisted chunk of a live search index checkpoint.
+message PersistedSearchChunk {
+  // Stable identity of the source document.
+  string document_id = 1;
+  // Stable identity of the indexed chunk within the index.
+  string chunk_id = 2;
+  // Bounded source document served in search hits.
+  OpenNlpDocument source_document = 3;
+  // Authoritative span within source_document.raw_text.
+  AnnotationSpan source_span = 4;
+  // Exact text represented by the stored vector.
+  string indexed_text = 5;
+  // Resolved embedding route shared by every chunk of one index.
+  EmbeddingRoute route = 6;
+  // Raw embedding vector in the index's declared dimension.
+  // Legacy format 2 checkpoints use this field. Provider-owned format 3
+  // checkpoints leave it empty.
+  repeated float vector = 7;
+  // Provider-owned row id when vector is stored in an immutable segment.
+  optional string vector_id = 8;
+  // Zero-based provider-owned vector segment containing vector_id.
+  optional uint32 vector_segment = 9;
+  // SHA-256 of the original float vector, used for content provenance.
+  optional bytes vector_sha256 = 10;
+  // Typed chunk projection identity retained across workspace restarts.
+  string chunk_group_id = 11;
+}

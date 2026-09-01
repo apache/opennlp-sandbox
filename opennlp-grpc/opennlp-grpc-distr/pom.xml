@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one
+   or more contributor license agreements.  See the NOTICE file
+   distributed with this work for additional information
+   regarding copyright ownership.  The ASF licenses this file
+   to you under the Apache License, Version 2.0 (the
+   "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing,
+   software distributed under the License is distributed on an
+   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.  See the License for the
+   specific language governing permissions and limitations
+   under the License.
+-->
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.apache.opennlp</groupId>
+        <artifactId>opennlp-grpc</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>opennlp-grpc-distr</artifactId>
+    <name>Apache OpenNLP gRPC :: Server Distribution</name>
+    <description>
+        Everything-in-one server jar for the docker images and the one-jar demo:
+        the slim gRPC server plus every in-tree add-on (ONNX Runtime inference,
+        the model installer catalog, the output formats, static embedding tables,
+        TEI and OpenVINO remote backends) shaded into
+        opennlp-grpc-server-all. Deployments that want a smaller footprint use
+        the slim opennlp-grpc-server jar and drop add-on jars on the classpath
+        instead.
+    </description>
+
+    <properties>
+        <!-- Must match the onnxruntime version managed by opennlp-dl and
+             opennlp-embeddings in ${opennlp.version}; opennlp-grpc-dl excludes
+             it so exactly one of the cpu/gpu profiles below supplies it. -->
+        <onnxruntime.version>1.29.0</onnxruntime.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-service</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-dl</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-installer</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-search-turboquant</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-formats</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-sink-grpc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-backend-static</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-backend-tei</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-backend-openvino</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- The sandbox parent manages log4j at test scope, which would demote the
+             server's transitive logging runtime out of this assembly; redeclared at
+             runtime scope exactly as the server module does. -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+            <version>${log4j2.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j2.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j2.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+    <!--
+      Exactly one ONNX Runtime flavor is active at a time, mirroring the
+      cpu/gpu profiles of opennlp-grpc-dl so the flavor of this assembly is
+      chosen by the same -Dgpu switch that selects it there.
+    -->
+    <profiles>
+        <profile>
+            <id>cpu</id>
+            <activation>
+                <property>
+                    <name>!gpu</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.microsoft.onnxruntime</groupId>
+                    <artifactId>onnxruntime</artifactId>
+                    <version>${onnxruntime.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>gpu</id>
+            <activation>
+                <property>
+                    <name>gpu</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.microsoft.onnxruntime</groupId>
+                    <artifactId>onnxruntime_gpu</artifactId>
+                    <version>${onnxruntime.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>opennlp-grpc-server-all-${project.version}</finalName>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>META-INF/LICENSE.txt</exclude>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/NOTICE</exclude>
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>model.properties</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>org.apache.opennlp.grpc.server.OpenNlpGrpcServer</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

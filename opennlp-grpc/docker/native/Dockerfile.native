@@ -1,0 +1,55 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# Experimental native runtime: GraalVM-compiled server and gateway binaries on
+# the CUDA cuDNN runtime. Build the binaries first (docker/native/build-native.sh
+# after mvn clean install -Dgpu), then from opennlp-grpc/:
+#   docker build -f docker/native/Dockerfile.native -t opennlp-grpc-demo:native .
+# The ONNX Runtime natives are unpacked into the image and loaded through
+# onnxruntime.native.path, so the hardened noexec tmpfs holds; the classic
+# English models must be configured through explicit model.*.path keys because
+# a native binary has no jar for the classpath model scan (see the README).
+FROM eclipse-temurin:21-jre-noble AS extractor
+COPY opennlp-grpc-distr/target/opennlp-grpc-server-all-*.jar /tmp/server.jar
+RUN apt-get update && apt-get install -y --no-install-recommends unzip \
+  && mkdir -p /opt/onnxruntime \
+  && unzip -j -q /tmp/server.jar 'ai/onnxruntime/native/linux-x64/*' -d /opt/onnxruntime
+
+FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
+
+LABEL org.opencontainers.image.title="Apache OpenNLP gRPC demonstration stack (native, CUDA)" \
+  org.opencontainers.image.description="GraalVM native OpenNLP gRPC server and gateway with ONNX Runtime CUDA embeddings" \
+  org.opencontainers.image.licenses="Apache-2.0" \
+  org.opencontainers.image.source="https://github.com/apache/opennlp-sandbox"
+
+RUN useradd --system --create-home --home-dir /home/opennlp opennlp \
+  && mkdir -p /opt/opennlp /srv/opennlp \
+  && chown -R opennlp:opennlp /opt/opennlp /srv/opennlp
+
+COPY --from=extractor /opt/onnxruntime /opt/onnxruntime
+COPY --chown=opennlp:opennlp --chmod=0755 docker/native/out/opennlp-grpc-server \
+  docker/native/out/opennlp-grpc-webapp docker/native/start-native.sh /opt/opennlp/
+
+VOLUME /srv/opennlp
+EXPOSE 7071 7072
+USER opennlp
+WORKDIR /opt/opennlp
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD ["bash", "-c", "exec 3<>\"/dev/tcp/127.0.0.1/${OPENNLP_HTTP_PORT:-7072}\""]
+
+ENTRYPOINT ["/opt/opennlp/start-native.sh"]

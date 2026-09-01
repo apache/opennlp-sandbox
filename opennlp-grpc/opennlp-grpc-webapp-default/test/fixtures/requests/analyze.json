@@ -1,0 +1,58 @@
+{
+  "document": {
+    "rawText": "The cats sat on the mats."
+  },
+  "options": {
+    "includeProbabilities": true,
+    "offsetEncoding": "OFFSET_ENCODING_UTF16_CODE_UNIT",
+    "embeddingModelId": "minilm",
+    "includeDocumentCentroid": true,
+    "rankedLanguageCount": 5
+  },
+  "profile": {
+    "steps": [
+      "PIPELINE_STEP_LANGUAGE_DETECT",
+      "PIPELINE_STEP_SENTENCE_DETECT",
+      "PIPELINE_STEP_TOKENIZE",
+      "PIPELINE_STEP_POS_TAG",
+      "PIPELINE_STEP_LEMMATIZE",
+      "PIPELINE_STEP_SENTIMENT",
+      "PIPELINE_STEP_EMBED"
+    ],
+    "termProfile": "en",
+    "stopwordLanguage": "en",
+    "posTagFormat": "POS_TAG_FORMAT_UD"
+  },
+  "chunkEmbedConfigs": [
+    {
+      "configId": "sentence-chunks",
+      "resultSetName": "Sentence chunks",
+      "chunking": {
+        "strategy": {
+          "standard": "STANDARD_CHUNKING_STRATEGY_SENTENCE"
+        },
+        "cleanText": true,
+        "preserveUrls": true
+      },
+      "embeddingModelIds": [
+        "minilm"
+      ]
+    },
+    {
+      "configId": "token-chunks",
+      "resultSetName": "Token windows",
+      "chunking": {
+        "strategy": {
+          "standard": "STANDARD_CHUNKING_STRATEGY_TOKEN"
+        },
+        "chunkSize": 96,
+        "chunkOverlap": 12,
+        "cleanText": true,
+        "preserveUrls": true
+      },
+      "embeddingModelIds": [
+        "minilm"
+      ]
+    }
+  ]
+}

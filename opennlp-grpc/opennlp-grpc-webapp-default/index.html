@@ -1,0 +1,1198 @@
+<!doctype html>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="description" content="Explore the Apache OpenNLP gRPC service." />
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+    <title>Apache OpenNLP gRPC</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#playground">Skip to playground</a>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Apache OpenNLP home">
+        <img class="brand-mark" src="./branding/opennlp-mark.png" alt="" width="43" height="43" />
+        <span>
+          <strong>Apache OpenNLP</strong>
+          <small>gRPC Workbench</small>
+        </span>
+      </a>
+      <nav class="site-nav" role="tablist" aria-label="Workbench navigation">
+        <button id="analysis-workbench-tab" type="button" role="tab" aria-selected="true"
+          aria-controls="analysis-workbench" data-workbench-tab="analysis">Analyze</button>
+        <button id="workflows-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="workflows-workbench" data-workbench-tab="workflows">Build index</button>
+        <button id="corpus-search-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="server-search" data-workbench-tab="corpus-search">Corpus search</button>
+        <button id="session-search-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="session-search" data-workbench-tab="session-search">Live index search</button>
+        <button id="models-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="model-data-workbench" data-workbench-tab="models">Models &amp; data</button>
+        <button id="trainer-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="vocabulary-trainer" data-workbench-tab="trainer">Trainer</button>
+        <button id="lifecycle-workbench-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+          aria-controls="lifecycle-workbench" data-workbench-tab="lifecycle">Lifecycle</button>
+      </nav>
+      <button id="theme-toggle" type="button" class="theme-toggle"
+        aria-label="Color theme: system. Activate for the light theme.">Auto</button>
+      <div id="service-status" role="status" aria-live="polite" class="service-status is-loading">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span data-status-label>Connecting</span>
+      </div>
+    </header>
+
+    <main>
+      <section id="playground" class="playground" aria-label="OpenNLP workbench">
+        <nav id="tool-navigation" class="tool-nav extension-switcher" aria-label="OpenNLP tools" hidden>
+          <a href="/" class="is-active" aria-current="page">
+            <span class="tool-icon" aria-hidden="true">AO</span>
+            <span><strong>Apache OpenNLP</strong><small>Default extension</small></span>
+          </a>
+        </nav>
+        <p id="tool-navigation-status" class="visually-hidden" role="status" aria-live="polite">
+          Discovering UI extensions.
+        </p>
+
+        <div id="analysis-workbench" class="workspace workspace-wide" role="tabpanel"
+          aria-labelledby="analysis-workbench-tab">
+          <div class="workbench-heading">
+            <div>
+              <p class="section-kicker">Apache OpenNLP gRPC</p>
+              <h1 id="playground-heading">Document analysis workbench</h1>
+              <p id="service-description">
+                Connecting to the service and discovering the analysis features available on this instance.
+              </p>
+            </div>
+            <dl class="service-facts">
+              <div><dt>Service</dt><dd id="service-name">Discovering</dd></div>
+              <div><dt>Presets</dt><dd id="profile-count">...</dd></div>
+              <div><dt>Model packs</dt><dd id="model-count">...</dd></div>
+              <div><dt>Languages</dt><dd id="pipeline-language-count">...</dd></div>
+            </dl>
+          </div>
+
+          <details class="help-callout">
+            <summary>How to use the analyzer</summary>
+            <ol>
+              <li>Paste a document (or press <strong>Load Alice novel</strong>), pick a preset,
+                and choose an embedding model if you want vectors attached to the output.</li>
+              <li>Press <strong>Analyze text</strong>. The complete typed response renders as the
+                Document, Chunks, Heatmap, Graph, and Protobuf JSON views; select any
+                annotation to inspect its exact span and payload.</li>
+              <li>Press <strong>Add to live index</strong> to index the analyzed document, then
+                query it from the Live index search tab.</li>
+            </ol>
+            <p class="help-code">
+              From code this is one <code>AnalyzeDocument</code> gRPC call, or
+              <code>POST /api/v1/analyze</code> on this gateway; Copy JSON and Download .pb export
+              exactly what your client receives. Runnable Python, Node.js, Java, and Go quickstarts
+              live in the repository's <code>examples/</code> directory, and any other gRPC language
+              generates a client straight from the <code>opennlp-grpc-api</code> protos.
+            </p>
+          </details>
+
+          <form id="analysis-form" class="analysis-form analysis-composer">
+            <div class="field text-field">
+              <div class="label-row">
+                <label for="analysis-text">Document text</label>
+                <span id="character-count">0 characters</span>
+              </div>
+              <textarea id="analysis-text" name="text" rows="7" required
+                placeholder="Paste a paragraph, article, contract, or other document here."></textarea>
+            </div>
+
+            <div class="configuration-grid">
+              <div class="configuration-column">
+                <div class="field">
+                  <label for="profile-select">Preset</label>
+                  <select id="profile-select" name="profile">
+                    <option value="max" selected>All available features</option>
+                    <option value="custom">Choose features</option>
+                    <option value="automatic">Server default profile</option>
+                  </select>
+                  <small class="field-help">Combines every safely configured feature reported by this
+                    server. Pick "Choose features" to open the feature checklist and select them
+                    yourself.</small>
+                </div>
+                <div class="field">
+                  <label for="embedding-model-select">Embedding model</label>
+                  <select id="embedding-model-select" disabled>
+                    <option value="">No embedding model configured</option>
+                  </select>
+                  <small class="field-help">When available, vectors are attached to document and chunk output.</small>
+                </div>
+                <div class="field">
+                  <label for="pipeline-language-select">Language pipeline</label>
+                  <select id="pipeline-language-select" disabled>
+                    <option value="">Automatic (route by detected language)</option>
+                  </select>
+                  <small class="field-help">Installed language model sets; automatic picks one when the
+                    detected language matches, and falls back to the default models.</small>
+                </div>
+                <div class="field">
+                  <label for="pos-tag-format-select">Part-of-speech tag set</label>
+                  <select id="pos-tag-format-select">
+                    <option value="">Model native</option>
+                    <option value="POS_TAG_FORMAT_UD">Universal Dependencies (UD)</option>
+                    <option value="POS_TAG_FORMAT_PENN">Penn Treebank</option>
+                  </select>
+                  <small class="field-help">Tags are converted from the model's native tag set when a
+                    different one is requested.</small>
+                </div>
+              </div>
+
+              <fieldset class="chunk-controls">
+                <legend>Passage chunking</legend>
+                <p>Return either strategy or both in the same response.</p>
+                <label class="check-control" for="sentence-chunks">
+                  <input id="sentence-chunks" type="checkbox" checked />
+                  <span><strong>Sentence chunks</strong><small>One chunk per detected sentence</small></span>
+                </label>
+                <label class="check-control" for="token-chunks">
+                  <input id="token-chunks" type="checkbox" checked />
+                  <span><strong>Token windows</strong><small>Overlapping windows across the document</small></span>
+                </label>
+                <div class="token-window-fields">
+                  <label for="token-chunk-size">Window (tokens) <input id="token-chunk-size" type="number"
+                    min="1" max="4096" value="96" inputmode="numeric" /></label>
+                  <label for="token-chunk-overlap">Overlap (tokens) <input id="token-chunk-overlap" type="number"
+                    min="0" max="4095" value="12" inputmode="numeric" /></label>
+                </div>
+              </fieldset>
+
+              <div class="capability-summary">
+                <div>
+                  <span class="field-label">Enabled features</span>
+                  <ul id="enabled-feature-list" aria-label="Enabled analysis features">
+                    <li>Discovering</li>
+                  </ul>
+                  <div id="feature-availability" class="feature-availability" role="status"
+                    aria-live="polite" hidden></div>
+                </div>
+                <details>
+                  <summary>Loaded model packs</summary>
+                  <ul id="model-list" aria-label="Available model packs">
+                    <li>Discovering</li>
+                  </ul>
+                </details>
+              </div>
+            </div>
+
+            <fieldset id="feature-picker" class="feature-picker" hidden>
+              <legend>Analysis features</legend>
+              <p>Select any configured feature. Required backbone steps are added automatically.</p>
+              <div id="feature-options" class="feature-options" aria-label="Selectable analysis features">
+                <p class="empty-message">Discovering server features.</p>
+              </div>
+            </fieldset>
+
+            <div class="form-actions">
+              <button id="analyze-button" type="submit" disabled>
+                <span data-button-label>Analyze text</span>
+                <span aria-hidden="true">›</span>
+              </button>
+              <span class="sample-actions">
+                <button id="sample-button" type="button" class="secondary-button">Use short sample</button>
+                <button id="alice-sample-button" type="button" class="secondary-button">Load Alice novel</button>
+                <button id="pride-sample-button" type="button" class="secondary-button">Load Pride and Prejudice</button>
+              </span>
+              <span class="checkbox-field">
+                <input id="normalization-xray-toggle" type="checkbox" name="normalization-xray" />
+                <label for="normalization-xray-toggle">Normalization alignment</label>
+              </span>
+              <p id="form-status" role="status" aria-live="polite" class="form-status">
+                Connect to the service and enter text to begin.
+              </p>
+            </div>
+          </form>
+
+          <details class="batch-panel">
+            <summary>Batch analyze (streaming)</summary>
+            <p class="field-help">
+              Paste several documents separated by blank lines. They stream through one
+              AnalyzeStream call with the configuration above; results arrive in completion
+              order, and one bad document does not stop the rest.
+            </p>
+            <label for="batch-text" class="visually-hidden">Batch documents</label>
+            <textarea id="batch-text" rows="5"
+              placeholder="First document...&#10;&#10;Second document...&#10;&#10;Third document..."></textarea>
+            <div class="form-actions">
+              <button id="batch-analyze-button" type="button" disabled>Analyze batch</button>
+              <span id="batch-status" role="status" aria-live="polite"></span>
+            </div>
+            <ol id="batch-results" class="batch-results" aria-label="Batch results"></ol>
+          </details>
+
+          <section id="analysis-result-panel" class="response-panel" aria-labelledby="response-heading">
+            <div class="response-header">
+              <div>
+                <span class="response-label">Typed annotations</span>
+                <h3 id="response-heading">Analysis result</h3>
+              </div>
+              <div class="response-actions">
+                <button id="add-to-index-button" type="button" class="copy-button" disabled>Add to live index</button>
+                <button id="copy-button" type="button" class="copy-button" disabled>Copy JSON</button>
+                <button id="download-button" type="button" class="copy-button" disabled>Download JSON</button>
+                <button id="download-pb-button" type="button" class="copy-button" disabled>Download .pb</button>
+                <button id="load-response-button" type="button" class="copy-button">Open saved response</button>
+                <input id="load-response-input" type="file" accept=".json,.pb,application/json" hidden />
+
+              </div>
+            </div>
+            <div id="analysis-language-summary" class="language-summary" hidden>
+              <span id="routed-pipeline-badge" class="pipeline-badge"></span>
+              <span id="ranked-language-chips" class="language-chips"
+                aria-label="Ranked language predictions"></span>
+            </div>
+            <div class="result-tabs" role="tablist" aria-label="Analysis result views">
+              <button id="document-tab" type="button" role="tab" aria-selected="true"
+                aria-controls="document-view" data-result-tab="document">Document</button>
+              <button id="chunks-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+                aria-controls="chunks-view" data-result-tab="chunks">Chunks</button>
+              <button id="heatmap-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+                aria-controls="heatmap-view" data-result-tab="heatmap">Heatmap</button>
+              <button id="graph-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+                aria-controls="graph-view" data-result-tab="graph">Graph</button>
+              <button id="json-tab" type="button" role="tab" aria-selected="false" tabindex="-1"
+                aria-controls="json-view" data-result-tab="json">Protobuf JSON</button>
+            </div>
+            <dl class="result-summary" aria-label="Document result summary">
+              <div><dt>Layers</dt><dd id="result-layer-count">…</dd></div>
+              <div><dt>Annotations</dt><dd id="result-annotation-count">…</dd></div>
+              <div><dt>Offsets</dt><dd id="result-offset-encoding">Not reported</dd></div>
+            </dl>
+            <div id="document-view" role="tabpanel" aria-labelledby="document-tab" class="document-view">
+              <div class="layer-browser">
+                <div class="layer-heading">
+                  <span>Layers</span>
+                  <small id="layer-summary">Analyze text to discover layers</small>
+                  <label for="layer-filter" class="visually-hidden">Filter annotation layers</label>
+                  <input id="layer-filter" type="search" placeholder="Filter layers" disabled />
+                </div>
+                <div id="layer-list" aria-label="Annotation layers" class="layer-list"></div>
+              </div>
+              <div class="annotation-canvas">
+                <p class="canvas-hint">Entities and sentences are highlighted by default. Click text to inspect
+                  every annotation covering it, choose All annotations to overlay every layer, or choose one
+                  layer to see it alone.</p>
+                <div id="document-window-controls" class="document-window-controls" hidden>
+                  <label id="document-window-label" for="document-window-position">
+                    Complete document
+                  </label>
+                  <input id="document-window-position" type="range" min="0" max="0" value="0" />
+                </div>
+                <div id="annotated-text" class="annotated-text" tabindex="0">No analysis yet.</div>
+                <section id="normalization-xray" class="normalization-xray" aria-label="Normalization alignment" hidden>
+                </section>
+              </div>
+            </div>
+            <div id="chunks-view" role="tabpanel" aria-labelledby="chunks-tab" class="chunks-view" hidden>
+              <div class="visualization-heading">
+                <div><span>Chunk groups</span><small>Compare every requested strategy over the same document</small></div>
+                <p>Each column preserves its typed group identity, source span, and attached embedding count.</p>
+              </div>
+              <div id="chunk-projection" class="chunk-projection">
+                <p class="empty-message">Analyze text with a chunk strategy to compare its output.</p>
+              </div>
+            </div>
+            <div id="heatmap-view" role="tabpanel" aria-labelledby="heatmap-tab" class="visualization-view" hidden>
+              <div class="visualization-heading">
+                <div><span>Document heatmap</span><small>Shade the same document by query similarity or by sentiment</small></div>
+                <p>Query ranking runs in the gRPC server. Sentiment reads the typed annotations of the current document.</p>
+              </div>
+              <div class="heatmap-controls">
+                <div class="heatmap-mode" role="group" aria-label="Heatmap score source">
+                  <button id="heatmap-mode-query" type="button" aria-pressed="true">Query similarity</button>
+                  <button id="heatmap-mode-sentiment" type="button" aria-pressed="false">Sentiment</button>
+                </div>
+                <form id="heatmap-query-form" class="heatmap-query-form">
+                  <label for="heatmap-projection-select">Chunk group</label>
+                  <select id="heatmap-projection-select" disabled>
+                    <option value="ALL_PROJECTIONS">All chunk groups, separate lanes</option>
+                  </select>
+                  <label for="heatmap-query">Find related chunks in this document</label>
+                  <div>
+                    <input id="heatmap-query" type="search"
+                      placeholder="Try: individual liberty or separation of powers" disabled />
+                    <button id="heatmap-query-button" type="submit" disabled>Score chunks</button>
+                  </div>
+                </form>
+              </div>
+              <p id="heatmap-status" class="heatmap-status" role="status" aria-live="polite">
+                Analyze text with document embeddings to score its chunks.
+              </p>
+              <div id="document-heatmap" class="chart-canvas document-heatmap" role="region"
+                aria-label="Document score heatmap">Analyze a document to build its heatmap.</div>
+              <p id="heatmap-selection" class="heatmap-selection" aria-live="polite">
+                Select a colored segment to inspect its text and score.
+              </p>
+            </div>
+            <div id="graph-view" role="tabpanel" aria-labelledby="graph-tab" class="visualization-view" hidden>
+              <div class="visualization-heading">
+                <div><span>Document graph</span><small>Document, syntax, and entity relationships</small></div>
+                <div class="graph-heading-actions">
+                  <p>Pan, zoom, or select a node or edge to return to its typed layer.</p>
+                  <button id="graph-completeness" type="button" aria-pressed="false" hidden>
+                    Show complete graph
+                  </button>
+                </div>
+              </div>
+              <div class="graph-mode" role="group" aria-label="Graph chunk group">
+                <button id="graph-mode-overview" type="button" aria-pressed="true">Layer overview</button>
+                <button id="graph-mode-dependencies" type="button" aria-pressed="false" disabled>Dependency arcs</button>
+                <button id="graph-mode-relations" type="button" aria-pressed="false" disabled>Entity network</button>
+              </div>
+              <div id="document-graph" class="chart-canvas chart-canvas-graph" role="img"
+                aria-label="Annotation graph">Analyze a document to build its graph.</div>
+              <p id="graph-selection" class="graph-selection" aria-live="polite">No graph selection.</p>
+            </div>
+            <div id="json-view" role="tabpanel" aria-labelledby="json-tab" hidden>
+              <pre id="response-output" tabindex="0"><code>No analysis yet.</code></pre>
+            </div>
+          </section>
+        </div>
+
+        <div id="annotation-drawer-backdrop" class="drawer-backdrop" hidden></div>
+        <aside id="annotation-details" class="annotation-drawer" role="dialog" aria-modal="true"
+          aria-labelledby="annotation-details-heading" hidden>
+          <header>
+            <div>
+              <span>Typed annotation</span>
+              <h2 id="annotation-details-heading">Selection details</h2>
+            </div>
+            <button id="annotation-details-close" type="button" aria-label="Close annotation details">×</button>
+          </header>
+          <div id="annotation-details-content" class="annotation-details-content" aria-live="polite">
+            <p>Choose a highlighted span to inspect its annotation.</p>
+          </div>
+        </aside>
+
+        <section id="workflows-workbench" class="workflows-workbench" role="tabpanel"
+          aria-labelledby="workflows-workbench-tab" hidden>
+          <header class="model-data-heading workflow-heading">
+            <div>
+              <p class="section-kicker">Text to searchable knowledge</p>
+              <h3>Build and explore in one flow</h3>
+              <p>
+                Paste a small corpus and OpenNLP will analyze it, learn its vocabulary, distill a
+                static embedding model, build a live index, and search it. Every stage stays visible.
+              </p>
+            </div>
+            <span id="workflow-mode-badge" class="workflow-default-badge">Checking this server</span>
+          </header>
+
+          <details class="help-callout">
+            <summary>What this tab builds</summary>
+            <p>An <strong>index</strong> is a searchable copy of your documents. The server splits each
+              document into chunks, turns each chunk into a vector with an embedding model, and keeps
+              the vectors so it can rank them against a question.</p>
+            <p>With a teacher model installed, this tab builds one from scratch in six steps: it reads
+              your documents, collects the words they use into a <strong>vocabulary</strong>, distils a
+              small <strong>embedding model</strong> for exactly that vocabulary from the teacher,
+              re-reads the documents through the new model, loads the result into a
+              <strong>live index</strong> in server memory, and runs your first search against it.
+              Without a teacher it still analyzes, indexes and searches, embedding with a model the
+              server already has.</p>
+            <p>A live index lives in memory and is gone when the server restarts unless you save it on
+              the <button type="button" class="link-button" data-workbench-jump="lifecycle">Lifecycle</button>
+              tab. The vocabulary and the distilled model are written to the server's artifact store
+              and stay there. The index is listed on
+              <button type="button" class="link-button" data-workbench-jump="session-search">Live index search</button>
+              and on Lifecycle as soon as it is built.</p>
+          </details>
+          <div class="workflow-builder">
+            <section class="workflow-composer" aria-labelledby="workflow-input-heading">
+              <div class="workflow-section-heading">
+                <span>Input</span>
+                <h4 id="workflow-input-heading">Your documents</h4>
+              </div>
+              <label for="workflow-corpus">Documents (blank line separates documents)</label>
+              <button id="workflow-sample-button" type="button" class="secondary-button">Load sample
+                documents</button>
+              <textarea id="workflow-corpus" rows="10"
+                placeholder="Paste one or more documents here. Separate documents with a blank line."></textarea>
+              <p id="workflow-corpus-stats" class="trainer-corpus-stats" aria-live="polite">
+                Add text to preview the documents.
+              </p>
+              <div class="workflow-primary-fields">
+                <span>
+                  <label for="workflow-name">Index name</label>
+                  <input id="workflow-name" type="text" value="My text index" />
+                </span>
+                <form id="workflow-search-form">
+                  <label for="workflow-query">First search</label>
+                  <div class="workflow-query-row">
+                    <input id="workflow-query" type="search"
+                      value="What are these documents about?"
+                      placeholder="What should these documents help you find?" />
+                    <button id="workflow-search-button" type="submit" class="secondary-button"
+                      disabled>Search again</button>
+                  </div>
+                </form>
+              </div>
+
+              <details class="workflow-options">
+                <summary>
+                  <span><strong>Configure the build</strong><small>Dictionary, teacher, vector storage, and limits</small></span>
+                  <span id="workflow-option-summary" class="workflow-option-summary">Checking this server</span>
+                </summary>
+                <div class="workflow-option-grid">
+                  <label for="workflow-dictionary-select">
+                    Vocabulary source
+                    <select id="workflow-dictionary-select" disabled>
+                      <option value="">Corpus terms only (default)</option>
+                    </select>
+                    <small>Pair the pasted corpus with a larger imported dictionary to guarantee its headwords.</small>
+                  </label>
+                  <label for="workflow-teacher-select">
+                    Embedding teacher
+                    <select id="workflow-teacher-select" disabled>
+                      <option value="">Discovering teachers</option>
+                    </select>
+                    <small>The selected teacher supplies semantic vectors for the learned vocabulary.</small>
+                  </label>
+                  <label for="workflow-provider-select">
+                    Vector storage
+                    <select id="workflow-provider-select" disabled>
+                      <option value="STANDARD_SEARCH_PROVIDER_FLAT_FLOAT">Exact flat float</option>
+                    </select>
+                    <small>Exact storage is the default; choose TurboQuant when the server offers it.</small>
+                  </label>
+                  <div class="workflow-numeric-options">
+                    <label for="workflow-min-frequency">Min term frequency
+                      <input id="workflow-min-frequency" type="number" min="1" value="1" />
+                    </label>
+                    <label for="workflow-max-terms">Max vocabulary terms
+                      <input id="workflow-max-terms" type="number" min="1" value="10000" />
+                    </label>
+                    <label for="workflow-pca-dims">PCA dimensions
+                      <input id="workflow-pca-dims" type="number" min="0" value="0" />
+                    </label>
+                  </div>
+                </div>
+              </details>
+
+              <button id="workflow-run-button" type="button" disabled>
+                Build index and search <span aria-hidden="true">→</span>
+              </button>
+              <p id="workflow-status" class="form-status" role="status" aria-live="polite">
+                Loading dictionaries, teachers, and search providers.
+              </p>
+            </section>
+
+            <aside class="workflow-progress" aria-labelledby="workflow-progress-heading">
+              <div class="workflow-section-heading">
+                <span>Progress</span>
+                <h4 id="workflow-progress-heading">Pipeline stages</h4>
+              </div>
+              <ol id="workflow-stages">
+                <li data-workflow-stage="analyze" data-state="pending">
+                  <i aria-hidden="true">1</i><span><strong>Analyze text</strong>
+                    <small class="workflow-stage-status">Waiting</small></span>
+                </li>
+                <li data-workflow-stage="vocabulary" data-state="pending">
+                  <i aria-hidden="true">2</i><span><strong>Learn vocabulary</strong>
+                    <small class="workflow-stage-status">Waiting</small></span>
+                </li>
+                <li data-workflow-stage="train" data-state="pending">
+                  <i aria-hidden="true">3</i><span><strong>Distill embeddings</strong>
+                    <small class="workflow-stage-status">Waiting</small></span>
+                </li>
+                <li data-workflow-stage="embed" data-state="pending">
+                  <i aria-hidden="true">4</i><span><strong>Embed documents</strong>
+                    <small class="workflow-stage-status">Waiting</small></span>
+                </li>
+                <li data-workflow-stage="index" data-state="pending">
+                  <i aria-hidden="true">5</i><span><strong>Build live index</strong>
+                    <small class="workflow-stage-status">Waiting</small></span>
+                </li>
+                <li data-workflow-stage="search" data-state="pending">
+                  <i aria-hidden="true">6</i><span><strong>Search and visualize</strong>
+                    <small class="workflow-stage-status">Waiting</small></span>
+                </li>
+              </ol>
+              <div class="workflow-accuracy-note">
+                <strong>What “train” means here</strong>
+                <p>The corpus chooses the vocabulary. The selected teacher supplies its semantic
+                  geometry, so a small pasted corpus does not pretend to train language meaning from scratch.</p>
+              </div>
+            </aside>
+          </div>
+
+          <section class="workflow-results" aria-labelledby="workflow-results-heading">
+            <div class="workflow-results-heading">
+              <div><span>Output</span><h4 id="workflow-results-heading">Analysis and search</h4></div>
+              <div id="workflow-artifacts" class="workflow-artifacts">No artifacts built yet.</div>
+            </div>
+            <div class="result-tabs" role="tablist" aria-label="Build result views">
+              <button type="button" role="tab" aria-selected="true"
+                data-workflow-result-tab="analysis">Analysis</button>
+              <button type="button" role="tab" aria-selected="false" tabindex="-1"
+                data-workflow-result-tab="search">Search heatmap</button>
+            </div>
+            <section id="workflow-analysis-panel" role="tabpanel">
+              <div id="workflow-analysis-results" class="workflow-analysis-results">
+                <p class="empty-message">Run the build to inspect each analyzed document.</p>
+              </div>
+            </section>
+            <section id="workflow-search-panel" role="tabpanel" hidden>
+              <div class="workflow-score-legend" aria-label="Similarity score color scale">
+                <span>−1</span><i></i><span>0</span><i></i><span>+1</span>
+              </div>
+              <div id="workflow-search-heatmap" class="server-search-heatmap">
+                <p class="empty-message">The search stage will shade every returned document chunk.</p>
+              </div>
+              <p id="workflow-search-selection" class="heatmap-selection" aria-live="polite">
+                Select a colored chunk to inspect its score.
+              </p>
+            </section>
+          </section>
+        </section>
+
+        <section id="server-search" class="server-search-lens" role="tabpanel"
+          aria-labelledby="corpus-search-workbench-tab" hidden>
+          <div class="search-lens-heading">
+            <div>
+              <p class="section-kicker">Search, then inspect the evidence behind every score</p>
+              <h3 id="server-search-heading">Search an existing index</h3>
+              <p>Search a configured corpus, compare transformed chunks with their authoritative source spans,
+                and inspect the document evidence behind every score.</p>
+              <p class="tab-bridge">This tab searches every index the server holds: read-only corpora an operator
+              configured and live indexes you built.
+                Documents you analyze and add yourself are searched on the
+                <button type="button" class="link-button" data-workbench-jump="session-search">Live index
+                search</button> tab.</p>
+            </div>
+            <div id="score-legend" aria-label="Similarity score color scale from minus one to one"
+              class="score-legend">
+              <span>−1</span><i aria-hidden="true"></i><span>0</span><i aria-hidden="true"></i><span>+1</span>
+              <small>less similar&nbsp;&nbsp; cosine score &nbsp;&nbsp;more similar</small>
+            </div>
+          </div>
+
+          <details class="help-callout">
+            <summary>How to use corpus search</summary>
+            <ol>
+              <li>Pick a configured index; its size, dimensions, and provenance appear beside it.</li>
+              <li>Type a natural-language query. The server embeds it, ranks every candidate chunk
+                by cosine similarity, and returns the scored results; the browser never ranks.</li>
+              <li>Switch between the ranked list and the heatmap, which shades each returned chunk
+                over the original document text on the fixed score scale above.</li>
+              <li>Open a hit to compare the indexed (normalized) chunk with its original source
+                span, and to browse the typed OpenNLP annotations for that document.</li>
+              <li>Need exact words or phrases too? Open <strong>Advanced search</strong> below to combine phrase,
+                keyword, and semantic clauses in one request.</li>
+            </ol>
+            <p class="help-code">
+              From code this is <code>SearchIndex</code> on <code>OpenNlpSearchService</code>, or
+              <code>POST /api/v1/search</code> with a document-shaped query;
+              <code>GET /api/v1/search-indexes</code> lists what you can search.
+            </p>
+          </details>
+
+          <form id="server-search-form" class="server-search-form">
+            <div class="field">
+              <label for="server-search-index">Search index</label>
+              <select id="server-search-index" aria-describedby="server-search-index-help" required disabled>
+                <option value="">Discovering configured indexes</option>
+              </select>
+              <small id="server-search-index-help" class="field-help">Pick a configured index or
+                <button type="button" class="link-button" data-workbench-jump="workflows">build an index from your own documents</button>.</small>
+            </div>
+            <div class="field server-query-field">
+              <label for="server-search-query">Natural-language query</label>
+              <input id="server-search-query" type="search" required disabled
+                placeholder="What should this corpus help you find?" />
+            </div>
+            <div class="field top-k-field">
+              <label for="server-search-top-k">Max hits</label>
+              <input id="server-search-top-k" type="number" min="1" max="50000" value="8" inputmode="numeric" />
+            </div>
+            <button id="server-search-button" type="submit" disabled>Search index <span aria-hidden="true">→</span></button>
+          </form>
+          <details id="compound-builder" class="compound-builder">
+            <summary>Advanced search: mix keyword and semantic clauses</summary>
+            <p class="builder-hint">
+              Combine semantic, keyword, and phrase clauses. While clauses are
+              listed, the search runs these clauses and the text field above is ignored;
+              keyword matches return highlighted spans.
+            </p>
+            <div class="builder-controls">
+              <label for="builder-kind" class="visually-hidden">Clause kind</label>
+              <select id="builder-kind">
+                <option value="semantic">Semantic</option>
+                <option value="term">Term</option>
+                <option value="phrase">Phrase</option>
+              </select>
+              <label for="builder-text" class="visually-hidden">Clause text</label>
+              <input id="builder-text" type="text" placeholder="Clause text" />
+              <label for="builder-mode" class="visually-hidden">Term match mode</label>
+              <select id="builder-mode" hidden>
+                <option value="any">Match any term</option>
+                <option value="all">Match all terms</option>
+              </select>
+              <label for="builder-slop" class="visually-hidden">Phrase slop</label>
+              <input id="builder-slop" type="number" min="0" value="0" inputmode="numeric" hidden />
+              <button id="builder-add-button" type="button" class="secondary-button">Add clause</button>
+            </div>
+            <div id="builder-clauses" class="builder-clauses"></div>
+            <div class="builder-controls">
+              <label for="builder-join">Combine clauses</label>
+              <select id="builder-join">
+                <option value="and">Must match every clause (mean score)</option>
+                <option value="or">May match any clause (best score)</option>
+                <option value="rrf">May match any clause (reciprocal-rank fusion)</option>
+              </select>
+              <button id="builder-clear-button" type="button" class="secondary-button">Clear clauses</button>
+            </div>
+          </details>
+          <p id="server-index-description" class="index-description">Discovering server-configured indexes.</p>
+          <p id="server-search-status" role="status" aria-live="polite" class="form-status">
+            Search becomes available when the server reports an index.
+          </p>
+
+          <div class="server-search-workspace">
+            <section class="server-results-panel" aria-labelledby="server-results-heading">
+              <div class="panel-heading">
+                <div><span>Ranked evidence</span><h4 id="server-results-heading">Search results</h4></div>
+                <div class="results-heading-tools">
+                  <div class="results-view-toggle" role="group" aria-label="Results view">
+                    <button id="server-view-list-button" type="button" aria-pressed="true">List</button>
+                    <button id="server-view-heatmap-button" type="button" aria-pressed="false">Heatmap</button>
+                  </div>
+                  <small id="server-result-count">0 hits</small>
+                </div>
+              </div>
+              <div id="server-search-results" aria-label="Server search results" class="server-search-results">
+                <p class="empty-message">Run a query to inspect scored source chunks.</p>
+              </div>
+              <div id="server-search-heatmap" aria-label="Document heatmap of scored chunks"
+                class="server-search-heatmap" hidden>
+                <p class="empty-message">Switch on the heatmap and run a query to shade every chunk of every
+                  document by its score.</p>
+              </div>
+            </section>
+
+            <section id="search-inspector" class="search-inspector" aria-labelledby="search-inspector-heading">
+              <div class="panel-heading">
+                <div><span>Selected evidence</span><h4 id="search-inspector-heading">Result inspector</h4></div>
+                <span class="score-with-caption"><output id="selected-search-score" class="selected-score">No score</output><small class="score-caption">similarity</small></span>
+              </div>
+
+              <dl id="search-analytics" aria-label="Selected document analytics" class="search-analytics">
+                <div><dt>Sentences</dt><dd id="search-sentence-count">…</dd></div>
+                <div><dt>Tokens</dt><dd id="search-token-count">…</dd></div>
+                <div><dt>Entities</dt><dd id="search-entity-count">…</dd></div>
+                <div><dt>Chunks</dt><dd id="search-chunk-count">…</dd></div>
+                <div><dt>Terms</dt><dd id="search-term-count">…</dd></div>
+              </dl>
+
+              <div class="source-evidence">
+                <div class="evidence-heading">
+                  <span>Authoritative source</span>
+                  <small>Selected span is painted with its fixed score color.</small>
+                </div>
+                <div id="search-source-text" class="search-source-text" tabindex="0">
+                  Select a result to view its original document.
+                </div>
+              </div>
+
+              <div class="chunk-comparison" aria-label="Original and indexed chunk comparison">
+                <article id="search-original-panel">
+                  <span>Original source span</span>
+                  <pre id="search-original-span">No selection</pre>
+                </article>
+                <article>
+                  <span>Indexed chunk</span>
+                  <pre id="search-indexed-chunk">No selection</pre>
+                </article>
+              </div>
+              <p id="chunk-comparison-status" class="comparison-status">No chunk comparison yet.</p>
+
+              <div class="inspector-grid">
+                <div>
+                  <h5>Identity and provenance</h5>
+                  <dl id="search-hit-facts" class="search-hit-facts">
+                    <div><dt>Document</dt><dd>Not selected</dd></div>
+                  </dl>
+                </div>
+                <div>
+                  <h5>Annotations covering this chunk</h5>
+                  <div id="search-hit-annotations" class="search-hit-annotations" aria-live="polite">
+                    <p class="empty-message">Select a hit to inspect typed layers.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section id="session-search" class="semantic-lab" role="tabpanel"
+          aria-labelledby="session-search-workbench-tab" hidden>
+          <div class="semantic-intro">
+            <p class="section-kicker">Search what you just analyzed</p>
+            <p class="local-mode-badge">Server memory</p>
+            <h3 id="semantic-heading">Search the documents you analyze</h3>
+            <p>
+              Add analyzed documents, then let the gRPC service build and search a bounded in-memory index,
+              stored exact (flat float) or quantized (TurboQuant). The browser renders server scores and
+              never performs vector ranking.
+            </p>
+            <p class="tab-bridge">A <strong>live index</strong> is a search index the server builds in its memory from
+              documents you analyze here. It is gone when the server restarts unless you save it on the
+              Lifecycle tab.
+              Indexes that shipped with the server are searched on the
+              <button type="button" class="link-button" data-workbench-jump="corpus-search">Corpus
+              search</button> tab.</p>
+            <dl class="semantic-facts">
+              <div><dt>Indexed chunks</dt><dd id="index-count">0</dd></div>
+              <div><dt>Similarity</dt><dd>Cosine</dd></div>
+              <div><dt>State</dt><dd id="index-storage">In memory once created</dd></div>
+            </dl>
+            <label for="workspace-index-select">Live index to search</label>
+            <select id="workspace-index-select">
+              <option value="">New live index (created on first add)</option>
+            </select>
+            <label for="workspace-name-input">Name for the next new index</label>
+            <input id="workspace-name-input" type="text" placeholder="Workbench index" />
+            <label for="workspace-provider-select">Vector storage for the next new index</label>
+            <select id="workspace-provider-select">
+              <option value="STANDARD_SEARCH_PROVIDER_FLAT_FLOAT">Flat float (exact)</option>
+              <option value="STANDARD_SEARCH_PROVIDER_TURBO_QUANT">TurboQuant (quantized)</option>
+            </select>
+            <details class="help-callout">
+              <summary>What is a live index?</summary>
+              <p>A live index is one search index that this server builds in its own memory from
+                documents you analyze on the Analyze tab. You can search it as soon as the first
+                document is added, and you can keep adding documents to it.</p>
+              <p>A live index has three states:</p>
+              <ul>
+                <li><strong>In memory</strong>: on the server only. It is gone when the server restarts.</li>
+                <li><strong>Saved to disk</strong>: a copy is on the server's disk, and it still accepts
+                  new documents. Use <em>Save to disk</em> on the Lifecycle tab.</li>
+                <li><strong>Read-only</strong>: on disk and closed to new documents. It stays
+                  searchable here and on the Corpus search tab.</li>
+              </ul>
+              <p>Elsewhere you may see this called a live index (Elasticsearch calls the writable
+                member of a data stream the write index) or a collection (Qdrant, Weaviate, Solr). In
+                this workbench a <em>collection</em> means something else: a group of live indexes whose
+                vocabulary coverage the server watches on the Lifecycle tab.</p>
+            </details>
+            <details class="help-callout">
+              <summary>How to use live index search</summary>
+              <ol>
+                <li>On the Analyze tab, analyze a document with an embedding model selected.</li>
+                <li>Choose the vector storage above, exact flat float or quantized TurboQuant,
+                  then press <strong>Add to live index</strong> there. The first add creates
+                  a new live index in server memory.</li>
+                <li>Describe what you want to find; the server embeds the query and returns
+                  ranked chunks with their source spans.</li>
+                <li>To keep a live index across restarts, or to make it read-only, alias, or rebuild it, use
+                  the Lifecycle tab.</li>
+              </ol>
+              <p class="help-code">
+                From code this is <code>IndexDocuments</code> then <code>SearchIndex</code>, or
+                <code>POST /api/v1/index-documents</code> and <code>POST /api/v1/search</code>;
+                the Python, Node.js, Java, and Go quickstarts in <code>examples/</code> run
+                exactly this flow.
+              </p>
+            </details>
+          </div>
+          <div class="semantic-console">
+            <form id="semantic-search-form">
+              <label for="semantic-query">Semantic query</label>
+              <textarea id="semantic-query" rows="3" disabled
+                placeholder="Add an embedding-enabled document, then describe what you want to find."></textarea>
+              <div class="form-actions">
+                <button id="search-button" type="submit" disabled>Search live index</button>
+                <button id="clear-index-button" type="button" class="secondary-button" disabled>Delete this live index</button>
+              </div>
+            </form>
+            <p id="semantic-status" class="form-status" role="status" aria-live="polite">
+              Analyze an embedding-enabled document, then add it to a live index.
+            </p>
+            <div id="search-results" class="search-results" aria-label="Semantic search results">
+              <p class="empty-message">No live index search results yet.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="model-data-workbench" class="model-data-workbench" role="tabpanel"
+          aria-labelledby="models-workbench-tab" hidden>
+          <header class="model-data-heading">
+            <div>
+              <p class="section-kicker">Server capability inventory</p>
+              <h3>Models &amp; data</h3>
+              <p>See what this server can run now and what still needs an operator-provided resource.</p>
+            </div>
+            <strong id="resource-summary">Discovering resources</strong>
+          </header>
+          <details class="help-callout">
+            <summary>How to use models &amp; data</summary>
+            <ol>
+              <li>Pipeline readiness lists every analysis feature: ready means it runs now,
+                anything else names the model or data resource an operator still has to provide.</li>
+              <li>The pinned catalog downloads verified models to this server node; every file is
+                checksum-verified before it is published, and nothing third-party is bundled.</li>
+              <li>Static tables and teacher models serve immediately after download; parser and
+                syntactic chunker models activate on the next server restart.</li>
+            </ol>
+            <p class="help-code">
+              From code this is <code>ListModelBundles</code>, <code>ListModelCatalog</code>, and
+              the streaming <code>InstallModel</code>, or <code>GET /api/v1/model-bundles</code>,
+              <code>GET /api/v1/model-catalog</code>, and <code>POST /api/v1/install-model</code>.
+            </p>
+          </details>
+          <div class="model-data-grid">
+            <section>
+              <h4>Pipeline readiness</h4>
+              <div id="resource-feature-list" class="resource-feature-list">
+                <p class="empty-message">Discovering server features.</p>
+              </div>
+            </section>
+            <section>
+              <h4>Loaded model packs</h4>
+              <ul id="resource-bundle-list" class="resource-bundle-list">
+                <li>Discovering model packs.</li>
+              </ul>
+            </section>
+          </div>
+          <section class="resource-catalog-card">
+            <div>
+              <p class="section-kicker">Pinned model catalog</p>
+              <h4>Download verified models to this server node</h4>
+              <p>
+                Static tables and teacher models become available immediately. Parser and chunker
+                models are verified during installation and become active after a server restart.
+                No third-party model weights are bundled.
+              </p>
+            </div>
+            <div id="resource-model-catalog" class="resource-model-catalog">
+              <p class="empty-message">Loading the standard model catalog.</p>
+            </div>
+            <div class="downloaded-model-inventory">
+              <h5>Downloaded on this node</h5>
+              <div id="resource-installed-models" class="resource-installed-models">
+                <p class="empty-message">Loading the verified model inventory.</p>
+              </div>
+            </div>
+          </section>
+          <section class="resource-installer-card">
+            <div>
+              <span>Verified resource installer</span>
+              <h4>Download before server startup</h4>
+              <p>
+                The server CLI accepts an operator-approved HTTP(S) or file URI and requires a SHA-256 or
+                SHA-512 digest. Downloads are bounded, verified, staged, and installed atomically.
+              </p>
+            </div>
+            <pre id="resource-install-command">java -jar opennlp-grpc-server.jar install-resource \
+  --source https://example.invalid/resource.bin \
+  --checksum &lt;sha256-or-sha512&gt; \
+  --target /srv/opennlp/models</pre>
+            <button id="copy-resource-command" type="button" class="secondary-button">Copy command</button>
+            <p id="resource-install-status" class="form-status" role="status" aria-live="polite">
+              Configure the installed paths, then restart the server to load the new capabilities.
+            </p>
+          </section>
+        </section>
+        <section id="vocabulary-trainer" class="vocabulary-trainer" role="tabpanel"
+          aria-labelledby="trainer-workbench-tab" hidden>
+          <header class="model-data-heading">
+            <div>
+              <p class="section-kicker">Vocabulary to model</p>
+              <h3>Trainer</h3>
+              <p>
+                Import a dictionary, learn a vocabulary from your documents, and distill a
+                configured teacher into a static embedding model this server serves immediately.
+              </p>
+            </div>
+          </header>
+          <details class="help-callout">
+            <summary>How to use the trainer</summary>
+            <ol>
+              <li>Optionally import a dictionary; its headwords become guaranteed terms of every
+                vocabulary learned afterwards.</li>
+              <li>Paste corpus documents and learn a vocabulary; the minimum frequency controls
+                which corpus terms survive.</li>
+              <li>Distill the vocabulary against an operator-approved teacher model. The result is
+                a static embedding model this server serves immediately, with no restart: select it
+                on the Analyze tab, index with it, and search with it.</li>
+            </ol>
+            <p>Distillation is not gradient training. There are no epochs, no learning rate and no
+              loss curve: the server runs each vocabulary row through the teacher once, reduces the
+              result with PCA, and reweights the rows by frequency. Three things share the word
+              vocabulary here: the teacher's own subword vocabulary, the vocabulary learned from
+              your corpus in step 2, and the rows of the distilled model, which are the same terms.</p>
+            <p class="help-code">
+              From code this is <code>OpenNlpVocabularyService</code> and
+              <code>OpenNlpModelTrainingService</code>, or the gateway's
+              <code>POST /api/v1/import-dictionary</code>, <code>POST /api/v1/learn-vocabulary</code>,
+              and training endpoints; the Python quickstart's second example streams this whole flow.
+            </p>
+          </details>
+          <p id="trainer-status" class="form-status" role="status" aria-live="polite">
+            Loading the trainer catalog.
+          </p>
+          <div class="trainer-grid">
+            <section class="trainer-step">
+              <h4>1 · Import a dictionary</h4>
+              <label for="trainer-format-select">Format</label>
+              <select id="trainer-format-select" disabled></select>
+              <label for="trainer-dictionary-name">Display name</label>
+              <input id="trainer-dictionary-name" type="text" placeholder="Legal dictionary" />
+              <label for="trainer-dictionary-file">Dictionary file</label>
+              <input id="trainer-dictionary-file" type="file" />
+              <button id="trainer-import-button" type="button" disabled>Import dictionary</button>
+              <label for="trainer-dictionary-select">Imported dictionaries</label>
+              <select id="trainer-dictionary-select" disabled></select>
+            </section>
+            <section class="trainer-step">
+              <h4>2 · Learn a vocabulary</h4>
+              <label for="trainer-corpus">Corpus documents (blank line separates documents)</label>
+              <textarea id="trainer-corpus" rows="7"
+                placeholder="Paste corpus text; separate documents with a blank line."></textarea>
+              <p id="trainer-corpus-stats" class="trainer-corpus-stats" aria-live="polite">
+                Waiting for corpus input. Add text to preview the training batch.
+              </p>
+              <label for="trainer-vocabulary-name">Display name</label>
+              <input id="trainer-vocabulary-name" type="text" placeholder="Legal vocabulary" />
+              <div class="trainer-inline">
+                <span>
+                  <label for="trainer-min-frequency">Min frequency</label>
+                  <input id="trainer-min-frequency" type="number" min="1" value="1" />
+                </span>
+                <span>
+                  <label for="trainer-max-terms">Max terms</label>
+                  <input id="trainer-max-terms" type="number" min="1" value="10000" />
+                </span>
+              </div>
+              <button id="trainer-learn-button" type="button" disabled>Learn vocabulary</button>
+              <label for="trainer-vocabulary-select">Learned vocabularies</label>
+              <select id="trainer-vocabulary-select" disabled></select>
+              <button id="trainer-download-tsv-button" type="button" class="secondary-button"
+                disabled>Download TSV</button>
+            </section>
+            <section class="trainer-step">
+              <h4>3 · Distill a static embedding model</h4>
+              <label for="trainer-teacher-select">Teacher</label>
+              <select id="trainer-teacher-select" disabled></select>
+              <label for="trainer-model-name">Display name</label>
+              <input id="trainer-model-name" type="text" placeholder="Legal static embedding model" />
+              <label for="trainer-pca-dims">PCA dimensions (0 = server default)</label>
+              <input id="trainer-pca-dims" type="number" min="0" value="0" />
+              <button id="trainer-train-button" type="button" disabled>Distill model</button>
+              <div id="trainer-progress-log" class="trainer-progress-log" aria-live="polite"></div>
+            </section>
+          </div>
+          <section class="trainer-models">
+            <h4>Static embedding models distilled on this server</h4>
+            <p>
+              A trained model serves under its artifact id. Select it as the embedding model in
+              Analyze, index the analyzed documents in Live index search, and search them there.
+            </p>
+            <div id="trainer-model-list" class="trainer-model-list"></div>
+          </section>
+        </section>
+        <section id="lifecycle-workbench" class="lifecycle-workbench" role="tabpanel"
+          aria-labelledby="lifecycle-workbench-tab" hidden>
+          <header class="model-data-heading">
+            <div>
+              <p class="section-kicker">Save, watch coverage, retrain, rebuild</p>
+              <h3>Lifecycle</h3>
+              <p>
+                Save live indexes to disk or make them read-only, point logical aliases at the current
+                index, rebuild an index with a newly trained model while the old one keeps
+                serving, and group live indexes into collections whose vocabulary coverage the
+                server streams live.
+              </p>
+            </div>
+          </header>
+          <details class="help-callout">
+            <summary>How to use lifecycle</summary>
+            <ol>
+              <li>Save a live index to disk to keep it across server restarts, or make
+                it read-only.</li>
+              <li>Point a logical alias at the current index so clients keep one stable name while
+                you swap the index behind it, blue/green style.</li>
+              <li>Rebuild a live index with a newly distilled model, without changing its
+                documents.</li>
+              <li>Group live indexes into a collection to watch its vocabulary coverage live: the
+                stream reports new terms that fall outside the current vocabulary artifact.</li>
+            </ol>
+            <p class="help-code">
+              From code these are the persist, seal, reindex, alias, and collection RPCs on
+              <code>OpenNlpSearchService</code>, mirrored by the gateway's
+              <code>/api/v1/persist-index</code>, <code>/api/v1/seal-index</code>,
+              <code>/api/v1/reindex-index</code>, alias, and collection endpoints.
+            </p>
+          </details>
+          <p id="lifecycle-status" class="form-status" role="status" aria-live="polite">
+            Loading the lifecycle catalog.
+          </p>
+          <div class="lifecycle-grid">
+            <section class="lifecycle-panel">
+              <h4>Live indexes</h4>
+              <div class="lifecycle-subcard">
+                <h5>Save and make read-only</h5>
+                <label for="lifecycle-index-select">Live index</label>
+                <select id="lifecycle-index-select" disabled></select>
+                <dl id="lifecycle-index-facts" class="search-hit-facts"></dl>
+                <div class="form-actions">
+                  <button id="lifecycle-persist-button" type="button" disabled>Save to disk</button>
+                  <button id="lifecycle-seal-button" type="button" class="secondary-button"
+                    disabled>Make read-only</button>
+                  <button id="lifecycle-refresh-button" type="button" class="secondary-button">Refresh</button>
+                </div>
+                <small class="field-help"><strong>Save to disk</strong> writes the live index to
+                  disk, and it keeps accepting new documents.</small>
+                <small class="field-help"><strong>Make read-only</strong> writes it to disk too,
+                  and stops it accepting documents. It stays searchable, and this cannot be undone.</small>
+                <p id="lifecycle-workspace-status" class="form-status" role="status"
+                  aria-live="polite"></p>
+              </div>
+              <div class="lifecycle-subcard">
+                <h5>Aliases</h5>
+                <div class="lifecycle-inline">
+                  <label for="lifecycle-alias-input" class="visually-hidden">Alias name</label>
+                  <input id="lifecycle-alias-input" type="text" placeholder="legal-current" />
+                  <button id="lifecycle-set-alias-button" type="button" disabled>Point alias here</button>
+                </div>
+                <div id="lifecycle-alias-list" class="lifecycle-alias-list"></div>
+                <p id="lifecycle-alias-status" class="form-status" role="status"
+                  aria-live="polite"></p>
+              </div>
+              <div class="lifecycle-subcard">
+                <h5>Rebuild with a new model</h5>
+                <small class="field-help">The same documents are indexed again with the embedding model
+                  you pick, while the old index keeps answering searches. Once the new index is built,
+                  the alias below is pointed at it, so clients switch over without an outage (a
+                  blue/green swap).</small>
+                <div class="lifecycle-step">
+                  <h6>1 · Pick the new embedding model</h6>
+                  <label for="lifecycle-reindex-model">Embedding model for the new index</label>
+                  <select id="lifecycle-reindex-model"></select>
+                </div>
+                <div class="lifecycle-step">
+                  <h6>2 · Pick vector storage</h6>
+                  <label for="lifecycle-reindex-provider">Vector storage</label>
+                  <select id="lifecycle-reindex-provider"></select>
+                  <small class="field-help">Exact flat float keeps full-precision vectors; TurboQuant
+                    quantizes them for a fraction of the memory with near-identical ranking.</small>
+                </div>
+                <div class="lifecycle-step">
+                  <h6>3 · Optional alias to switch</h6>
+                  <label for="lifecycle-reindex-alias">Alias to point at the new index (optional)</label>
+                  <input id="lifecycle-reindex-alias" type="text" placeholder="legal-current" />
+                </div>
+                <button id="lifecycle-reindex-button" type="button" disabled>Rebuild index</button>
+                <p id="lifecycle-rebuild-status" class="form-status" role="status"
+                  aria-live="polite"></p>
+              </div>
+              <div class="lifecycle-subcard">
+                <h5>Vector storage available on this server</h5>
+                <div id="lifecycle-provider-list" class="lifecycle-provider-list"></div>
+              </div>
+            </section>
+            <section class="lifecycle-panel">
+              <h4>Collections</h4>
+              <p class="field-help"><strong>A collection is a named group of live indexes you want to
+                watch together.</strong> It is not something you search. It records which indexes
+                belong together, which dictionary, vocabulary and model they were built from, and how
+                many unfamiliar terms should raise an alert; the server then reports, live, how much of
+                the group's text the current vocabulary still covers. In Qdrant, Solr or Weaviate a
+                collection is the searchable thing itself; here that is a live index.</p>
+              <label for="collection-select">Collection</label>
+              <select id="collection-select"></select>
+              <div class="lifecycle-inline">
+                <span>
+                  <label for="collection-id">Collection id</label>
+                  <input id="collection-id" type="text" placeholder="legal" />
+                </span>
+                <span>
+                  <label for="collection-name">Display name</label>
+                  <input id="collection-name" type="text" placeholder="Legal corpus" />
+                </span>
+              </div>
+              <label for="collection-members">Member live indexes</label>
+              <select id="collection-members" multiple size="4"></select>
+              <div class="lifecycle-inline">
+                <span>
+                  <label for="collection-dictionary-id">Dictionary</label>
+                  <select id="collection-dictionary-id"></select>
+                </span>
+                <span>
+                  <label for="collection-vocabulary-id">Vocabulary</label>
+                  <select id="collection-vocabulary-id"></select>
+                </span>
+              </div>
+              <label for="collection-model-id">Serving model artifact</label>
+              <select id="collection-model-id"></select>
+              <div class="lifecycle-field-row">
+                <label for="collection-threshold">Alert after this many out-of-vocabulary terms</label>
+                <input id="collection-threshold" type="number" min="0" value="0" inputmode="numeric" />
+              </div>
+              <small class="field-help">Leave this at 0 to never alert.</small>
+              <div class="form-actions">
+                <button id="collection-save-button" type="button">Save collection</button>
+                <button id="collection-delete-button" type="button" class="secondary-button">Delete</button>
+              </div>
+              <p id="collection-status" class="form-status" role="status" aria-live="polite"></p>
+              <h5>Vocabulary coverage</h5>
+              <details class="help-callout">
+                <summary>What vocabulary coverage measures</summary>
+                <p>A <strong>vocabulary</strong> here is the term list the serving model was distilled
+                  from (learned on the Trainer tab). Coverage is the share of term occurrences in the
+                  collection's indexes that hit a row of that vocabulary; the terms that miss are listed
+                  below as out-of-vocabulary. Falling coverage over time is vocabulary drift: the
+                  documents have moved on from the words the model knows. It does not measure semantic
+                  drift, where the same words change meaning. When coverage falls, learn a new
+                  vocabulary from the current documents, distil a new model, and rebuild the index
+                  with it.</p>
+              </details>
+              <div class="coverage-meter" role="img" aria-label="Vocabulary coverage">
+                <i id="collection-coverage-bar"></i>
+              </div>
+              <p id="collection-coverage-label" class="coverage-label">No collection selected.</p>
+              <dl id="collection-drift-stats" class="search-hit-facts"></dl>
+              <h5>Out-of-vocabulary terms</h5>
+              <div id="collection-term-statistics" class="collection-term-statistics"></div>
+              <h5>Watch stream</h5>
+              <p id="collection-watch-status" class="form-status" role="status" aria-live="polite">
+                Not watching a collection.
+              </p>
+              <div id="collection-event-log" class="collection-event-log" aria-live="polite"></div>
+            </section>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <p>Apache OpenNLP</p>
+      <p>Apache OpenNLP: open source natural language processing.</p>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

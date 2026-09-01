@@ -1,0 +1,10 @@
+{
+  "indexId": "live-1",
+  "embedding": {
+    "modelId": "minilm"
+  },
+  "provider": {
+    "standard": "STANDARD_SEARCH_PROVIDER_TURBO_QUANT"
+  },
+  "alias": "current"
+}

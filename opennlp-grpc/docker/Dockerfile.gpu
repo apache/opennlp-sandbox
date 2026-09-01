@@ -1,0 +1,79 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# CUDA runtime image for the OpenNLP gRPC server with the ONNX Runtime CUDA
+# execution provider. Build the repository with the gpu Maven flavor first,
+# which replaces the onnxruntime jar with onnxruntime_gpu inside the shaded
+# server jar (mvn clean install -Dgpu), then from opennlp-grpc/:
+#   docker build -f docker/Dockerfile.gpu -t opennlp-grpc-demo:gpu .
+# Run with the NVIDIA container runtime:
+#   docker run --gpus all ... opennlp-grpc-demo:gpu
+# ONNX Runtime 1.25 needs CUDA 12 with cuDNN 9 at runtime; both come from the
+# base image, and the host only provides the NVIDIA driver. Embedding models
+# served on the GPU use model.embedder.<id>.cuda.path configuration keys; the
+# same image still runs every CPU feature of the default image.
+FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
+
+LABEL org.opencontainers.image.title="Apache OpenNLP gRPC demonstration stack (CUDA)" \
+  org.opencontainers.image.description="OpenNLP gRPC server with ONNX Runtime CUDA embeddings, JSON gateway, and browser workbench" \
+  org.opencontainers.image.licenses="Apache-2.0" \
+  org.opencontainers.image.source="https://github.com/apache/opennlp-sandbox"
+
+# The JRE is copied from the Temurin image instead of installed with apt so
+# this file tracks the same Java runtime as docker/Dockerfile.
+COPY --from=eclipse-temurin:21-jre-noble /opt/java/openjdk /opt/java/openjdk
+ENV JAVA_HOME=/opt/java/openjdk \
+  PATH=/opt/java/openjdk/bin:$PATH
+
+RUN useradd --system --create-home --home-dir /home/opennlp opennlp \
+  && mkdir -p /opt/opennlp/backends /srv/opennlp \
+  && chown -R opennlp:opennlp /opt/opennlp /srv/opennlp
+
+COPY --chown=opennlp:opennlp opennlp-grpc-distr/target/opennlp-grpc-server-all-*.jar /opt/opennlp/
+COPY --chown=opennlp:opennlp opennlp-grpc-webapp/target/opennlp-grpc-webapp-*.jar /opt/opennlp/
+
+# ONNX Runtime normally self-extracts its native libraries to /tmp at startup,
+# which the hardened noexec tmpfs forbids. The libraries are unpacked into the
+# image once instead and onnxruntime.native.path points the loader at them.
+RUN apt-get update && apt-get install -y --no-install-recommends unzip \
+  && mkdir -p /opt/onnxruntime \
+  && unzip -j -q /opt/opennlp/opennlp-grpc-server-*.jar \
+    'ai/onnxruntime/native/linux-x64/*' -d /opt/onnxruntime \
+  && apt-get purge -y unzip && apt-get autoremove -y \
+  && rm -rf /var/lib/apt/lists/*
+ENV JDK_JAVA_OPTIONS="-Donnxruntime.native.path=/opt/onnxruntime"
+# The server-all assembly already bundles every in-tree add-on (ONNX Runtime,
+# static tables, TEI, OpenVINO); /opt/opennlp/backends stays as the drop-in
+# point for third-party add-on jars mounted or copied by operators.
+COPY --chown=opennlp:opennlp --chmod=0755 docker/start-demo.sh /opt/opennlp/start-demo.sh
+
+# Persistent server-owned state (models, vocabulary artifacts, persisted
+# indexes) and the optional server.properties live under /srv/opennlp.
+VOLUME /srv/opennlp
+
+# 7071 is the gRPC service, 7072 the JSON gateway and browser workbench.
+EXPOSE 7071 7072
+
+USER opennlp
+WORKDIR /opt/opennlp
+
+# The gateway has no authentication, so the healthcheck and the documented
+# port mappings stay on loopback interfaces.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD ["bash", "-c", "exec 3<>\"/dev/tcp/127.0.0.1/${OPENNLP_HTTP_PORT:-7072}\""]
+
+ENTRYPOINT ["/opt/opennlp/start-demo.sh"]

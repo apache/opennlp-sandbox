@@ -1,0 +1,62 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpSinkProto";
+option java_package = "org.apache.opennlp.grpc.v1";
+
+// The downstream document sink contract. This service is implemented by a
+// RECEIVER, in any protobuf language: the OpenNLP gRPC server (through its
+// grpc sink add-on) acts as the client and streams every analyzed document to
+// the configured receiver. A Python, Go, or Java process implementing this one
+// RPC is a complete output destination.
+
+// Implemented by downstream receivers of analyzed documents.
+service OpenNlpDocumentSinkService {
+  // Receives one client-streamed sequence of analyzed documents. The sender
+  // half-closes when its stream of work ends (normally at server shutdown) and
+  // the receiver replies with one summary. A receiver error terminates the
+  // stream and the sender reports the failure without retrying the documents.
+  rpc StreamDocuments(stream DocumentSinkItem) returns (DocumentSinkSummary);
+}
+
+// One analyzed document pushed to a receiver, optionally accompanied by a
+// rendering produced by a deployed output formatter.
+message DocumentSinkItem {
+  // The analyzed document, as AnalyzeDocument returns it.
+  OpenNlpDocument document = 1;
+  // The output format id of the accompanying rendering, when one is configured.
+  optional string format_id = 2;
+  // IANA media type of the rendering.
+  optional string media_type = 3;
+  // The rendered content. Text formats are UTF-8 encoded.
+  optional bytes rendered = 4;
+}
+
+// The receiver's acknowledgement of one completed stream.
+message DocumentSinkSummary {
+  // Documents the receiver accepted.
+  int64 accepted_documents = 1;
+  // Free-form receiver identity for the sender's logs.
+  optional string receiver = 2;
+}

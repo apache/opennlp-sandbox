@@ -33,8 +33,24 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-grpc-spi</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
             <artifactId>opennlp-grpc-api</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency> <!-- gRPC server reflection (ProtoReflectionServiceV1) -->
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-services</artifactId>
+            <version>${grpc.version}</version>
+        </dependency>
+        <dependency> <!-- Netty transport for the server; not needed by API stub consumers -->
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+            <version>${grpc.version}</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.opennlp</groupId>
@@ -43,6 +59,74 @@
         <dependency>
             <groupId>org.apache.opennlp</groupId>
             <artifactId>opennlp-model-resolver</artifactId>
+        </dependency>
+        <!-- Immutable vector indexes and the normalized legal-passage interchange contract.
+             The onnxruntime jar is excluded so the slim server carries no native inference
+             runtime; ONNX Runtime ships only in the opennlp-grpc-dl add-on. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-embeddings</artifactId>
+            <version>${opennlp.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.microsoft.onnxruntime</groupId>
+                    <artifactId>onnxruntime</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- SentencePiece subword tokenization for PIPELINE_STEP_SUBWORD_TOKENIZE. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-subword</artifactId>
+            <version>${opennlp.version}</version>
+        </dependency>
+        <!-- WordNet-style lexical knowledge bases for PIPELINE_STEP_EXPAND. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-wordnet</artifactId>
+            <version>${opennlp.version}</version>
+        </dependency>
+        <!-- Bundled Natural Earth gazetteer and geocoders for PIPELINE_STEP_GEOCODE. -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-geo</artifactId>
+            <version>${opennlp.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-models-sentdetect-en</artifactId>
+            <version>${opennlp.models.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-models-tokenizer-en</artifactId>
+            <version>${opennlp.models.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-models-pos-en</artifactId>
+            <version>${opennlp.models.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-models-lemmatizer-en</artifactId>
+            <version>${opennlp.models.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-models-langdetect</artifactId>
+            <version>${opennlp.models.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- Canonical protobuf JSON rendering for the built-in protojson formatter. -->
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+            <version>${protobuf.version}</version>
         </dependency>
         <dependency>
             <groupId>info.picocli</groupId>
@@ -105,52 +189,30 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-            <version>${awaitility.version}</version>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <configuration>
+                    <excludes combine.children="append">
+                        <!-- User-supplied input retained byte-for-byte as a regression fixture. -->
+                        <exclude>src/test/resources/document/vibe-coding-speech.txt</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <!-- Test jar so add-on modules can run the search registry and service tests
+                 that need their provider on the classpath, reusing these fixtures. -->
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                         <executions>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
                     <execution>
-                        <id>copy-jar-to-test-resources</id>
-                        <phase>process-test-resources</phase>
                         <goals>
-                            <goal>copy</goal>
+                            <goal>test-jar</goal>
                         </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.apache.opennlp</groupId>
-                                    <artifactId>opennlp-models-pos-en</artifactId>
-                                    <version>${opennlp.models.version}</version>
-                                    <type>jar</type>
-                                    <outputDirectory>${project.build.testOutputDirectory}/models</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.apache.opennlp</groupId>
-                                    <artifactId>opennlp-models-tokenizer-en</artifactId>
-                                    <version>${opennlp.models.version}</version>
-                                    <type>jar</type>
-                                    <outputDirectory>${project.build.testOutputDirectory}/models</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.apache.opennlp</groupId>
-                                    <artifactId>opennlp-models-sentdetect-en</artifactId>
-                                    <version>${opennlp.models.version}</version>
-                                    <type>jar</type>
-                                    <outputDirectory>${project.build.testOutputDirectory}/models</outputDirectory>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -174,6 +236,56 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.11.0</version>
+                <executions>
+                    <execution>
+                        <id>unpack-integration-test-models</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.apache.opennlp</groupId>
+                                    <artifactId>opennlp-models-sentdetect-en</artifactId>
+                                    <version>${opennlp.models.version}</version>
+                                    <type>jar</type>
+                                    <includes>*.bin</includes>
+                                    <outputDirectory>${project.build.testOutputDirectory}/models</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.opennlp</groupId>
+                                    <artifactId>opennlp-models-tokenizer-en</artifactId>
+                                    <version>${opennlp.models.version}</version>
+                                    <type>jar</type>
+                                    <includes>*.bin</includes>
+                                    <outputDirectory>${project.build.testOutputDirectory}/models</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.opennlp</groupId>
+                                    <artifactId>opennlp-models-pos-en</artifactId>
+                                    <version>${opennlp.models.version}</version>
+                                    <type>jar</type>
+                                    <includes>*.bin</includes>
+                                    <outputDirectory>${project.build.testOutputDirectory}/models</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.opennlp</groupId>
+                                    <artifactId>opennlp-models-lemmatizer-en</artifactId>
+                                    <version>${opennlp.models.version}</version>
+                                    <type>jar</type>
+                                    <includes>*.bin</includes>
+                                    <outputDirectory>${project.build.testOutputDirectory}/models</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <executions>
                     <execution>
@@ -184,10 +296,28 @@
                         <configuration>
                             <finalName>opennlp-grpc-server-${project.version}</finalName>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>META-INF/LICENSE.txt</exclude>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/NOTICE</exclude>
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>model.properties</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>opennlp.OpenNLPServer</mainClass>
+                                    <mainClass>org.apache.opennlp.grpc.server.OpenNlpGrpcServer</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

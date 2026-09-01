@@ -1,0 +1,486 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+syntax = "proto3";
+
+package org.apache.opennlp.grpc.v1;
+
+import "org/apache/opennlp/grpc/v1/opennlp_document.proto";
+import "org/apache/opennlp/grpc/v1/opennlp_pipeline.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OpenNlpServiceProto";
+option java_package = "org.apache.opennlp.grpc.v1";
+
+// The v1 document-centric OpenNLP analysis API: unary and progressive document
+// analysis, bulk streaming, embedding, discovery, and output formatting.
+//
+// Error model: failures are reported as gRPC status codes. AnalyzeDocument maps
+// validation/processing errors to INVALID_ARGUMENT (malformed/invalid request),
+// NOT_FOUND (unknown profile, bundle, model, or entity type), FAILED_PRECONDITION
+// (a requested step's dependency was not run), UNIMPLEMENTED (a requested step,
+// format, or feature this server does not implement), UNAVAILABLE (an upstream
+// dependency such as a remote embedding backend is unreachable; retryable), and
+// INTERNAL (unexpected server fault). GetServiceInfo and ListModelBundles do not
+// validate input and complete with OK.
+service OpenNlpAnalysisService {
+  // Analyzes one document according to a profile (the steps to run) and options
+  // (how to render results), returning the annotated document plus per-step
+  // diagnostics. See AnalyzeDocumentRequest / AnalyzeDocumentResponse and the
+  // service-level error model above.
+  rpc AnalyzeDocument(AnalyzeDocumentRequest) returns (AnalyzeDocumentResponse);
+  // Analyzes one document while emitting the initial document, atomic layer
+  // updates as independent pipeline branches finish, and the final canonical
+  // response. A failure confined to one branch is reported as an event so
+  // independent branches can continue. Invalid input or a failed backbone
+  // terminates the RPC with the same status as AnalyzeDocument.
+  rpc AnalyzeDocumentProgressive(AnalyzeDocumentRequest)
+      returns (stream AnalyzeDocumentEvent);
+  // Reports server identity and capabilities: OpenNLP/API versions, the ids of the
+  // profiles registered on the server, the pipeline steps this server implements,
+  // loaded resources, and the operator text limit.
+  rpc GetServiceInfo(GetServiceInfoRequest) returns (GetServiceInfoResponse);
+  // Lists the model bundles loaded on the server and their aggregate capabilities.
+  rpc ListModelBundles(ListModelBundlesRequest) returns (ListModelBundlesResponse);
+  // High-throughput document analysis. The first request fixes the analysis
+  // configuration for the stream; every later request carries one document.
+  // Documents execute concurrently and responses arrive in completion order,
+  // correlated by the caller's sequence number. A failure confined to one
+  // document is returned on that document's response and does not end the stream.
+  // A malformed message sequence or invalid stream configuration terminates the
+  // stream with INVALID_ARGUMENT.
+  rpc AnalyzeStream(stream AnalyzeStreamRequest) returns (stream AnalyzeStreamResponse);
+  // High-throughput embedding: the client streams texts, the server streams one vector
+  // per text back, in request order. Bypasses the document pipeline entirely: no sentence
+  // detection, no chunking, no diagnostics; each message's text embeds as one unit (the
+  // caller decides segmentation). One stream uses one embedding model, fixed by the first
+  // message. Errors (unknown or mid-stream-switched model id, blank text) terminate the
+  // stream with a status: INVALID_ARGUMENT (blank text, model switch), NOT_FOUND (unknown
+  // model id, or no model id when several models are configured and none is the default).
+  rpc EmbedText(stream EmbedTextRequest) returns (stream EmbedTextResponse);
+  // Lists the document output formats served by this instance. Formats are
+  // contributed by DocumentOutputFormatter providers discovered from the
+  // classpath; the list is empty when no formatter jar is deployed.
+  rpc ListOutputFormats(ListOutputFormatsRequest) returns (ListOutputFormatsResponse);
+  // Renders one analyzed document into a contributed output format. The document
+  // is one previously returned by AnalyzeDocument (or assembled by the caller in
+  // the same shape); no analysis runs here. Errors: NOT_FOUND (the format id names
+  // no deployed formatter; the message lists the available ids), INVALID_ARGUMENT
+  // (blank format id or missing document), INTERNAL (the formatter failed).
+  rpc FormatDocument(FormatDocumentRequest) returns (FormatDocumentResponse);
+}
+
+// Input to AnalyzeDocument. Supplies the document, selects which analysis to run
+// (via an inline profile and/or a named profile_id), tunes output via options, and
+// optionally requests one or more chunk+embedding groups.
+message AnalyzeDocumentRequest {
+  // The document to analyze. Required; document.raw_text must be non-blank
+  // (else INVALID_ARGUMENT).
+  OpenNlpDocument document = 1;
+  // Classic single-profile usage.
+  AnalysisProfile profile = 2;
+  // Output/execution options (probabilities, offset encoding, parse formats, etc.).
+  AnalysisOptions options = 3;
+  // Names a server-side profile to use. Resolved against the server's profile
+  // registry; an unknown id => NOT_FOUND. When `profile` is also set, the inline
+  // profile is merged field-by-field over the named one. When neither is set, the
+  // server's default profile ("en-basic") is used.
+  optional string profile_id = 4;
+
+  // Per-chunking-strategy multi-config. Chunking first; for each strategy
+  // the caller names exactly which embedding_model_ids to attach to its chunks.
+  // The server shares the base NLP analysis (sentences etc.) across all entries.
+  repeated ChunkEmbedConfigEntry chunk_embed_configs = 5;
+
+  // Category-driven chunking: group sentences by their per-sentence category from the
+  // PIPELINE_STEP_SENTIMENT label), concatenate each category's sentences into one chunk, and
+  // embed it. Requires SENTIMENT in the profile so sentences carry labels. Each entry yields one
+  // ChunkEmbeddingGroup whose chunks are the category groups (chunk_tag = the category label),
+  // with a per-model centroid. Empty when not requested.
+  repeated CategoryChunkConfigEntry category_chunk_configs = 6;
+}
+
+// One category-chunking request: groups the document's sentences by category and embeds each
+// group's concatenated text. The output is a normal ChunkEmbeddingGroup (one chunk per category).
+message CategoryChunkConfigEntry {
+  // Caller-chosen id for this config entry; becomes the resulting group's group_id.
+  string config_id = 1;
+  // Optional allowlist of category labels to emit, in this order. Empty selects every distinct
+  // category the sentences carry, in first-appearance order. Matched case-insensitively; a listed
+  // category that no sentence carries is simply absent from the output.
+  repeated string categories = 2;
+  // The embedding models to attach to each category group's concatenated text.
+  // Setting both this field and `embedding_selectors` => INVALID_ARGUMENT.
+  repeated string embedding_model_ids = 3;
+  // Optional friendly label, echoed onto the resulting group's result_set_name.
+  optional string result_set_name = 4;
+  // Typed embedding selections. Each selector can optionally pin a backend route.
+  // Setting both this field and `embedding_model_ids` => INVALID_ARGUMENT.
+  repeated EmbeddingSelector embedding_selectors = 5;
+}
+
+// One chunking strategy + the concrete embedding models to use for the chunks
+// it produces. Corresponds 1:1 to one ChunkEmbeddingGroup in the reply.
+message ChunkEmbedConfigEntry {
+  // Caller-chosen id for this config entry; becomes the resulting group's group_id.
+  string config_id = 1;
+  // Optional friendly label, echoed onto the resulting group's result_set_name.
+  optional string result_set_name = 2;
+  // Optional profile merged over the top-level request profile to supply backbone
+  // steps (sentence detection, tokenization, ...) needed for this entry's chunking.
+  optional AnalysisProfile profile = 3;
+  // The chunking strategy for this entry. When omitted, the server applies a
+  // sentence-based default for the entry.
+  optional ChunkingSpec chunking = 4;
+  // The embeddings wanted for *this* chunking strategy's chunks.
+  // Not a blind NxM; explicit per-strategy list.
+  // Setting both this field and `embedding_selectors` => INVALID_ARGUMENT.
+  repeated string embedding_model_ids = 5;
+  // Typed embedding selections. Each selector can optionally pin a backend route.
+  // Setting both this field and `embedding_model_ids` => INVALID_ARGUMENT.
+  repeated EmbeddingSelector embedding_selectors = 6;
+}
+
+// Output of AnalyzeDocument: the annotated document plus diagnostics describing
+// what each step did or why it was skipped.
+message AnalyzeDocumentResponse {
+  // The analyzed document with all requested annotations and chunk/embedding groups.
+  OpenNlpDocument document = 1;
+  // Per-step informational notes, warnings, or non-fatal errors. Fatal failures
+  // are returned as a gRPC error status instead (see the service error model).
+  repeated ProcessingDiagnostic diagnostics = 2;
+}
+
+// One ordered update from progressive analysis of a single document.
+message AnalyzeDocumentEvent {
+  // Monotonically increasing sequence within this RPC, beginning at one.
+  uint64 sequence = 1;
+  // The update carried by this event.
+  oneof update {
+    // Initial document identity, source text, metadata, and requested steps.
+    AnalysisStarted started = 2;
+    // Complete layers produced atomically by one finished pipeline branch.
+    AnalysisLayerBatch layers_ready = 3;
+    // Failure of one non-backbone branch. Independent branches continue.
+    AnalysisStepFailure step_failed = 4;
+    // Final canonical document and the complete diagnostic set.
+    AnalyzeDocumentResponse complete = 5;
+  }
+}
+
+// Initial state for one progressive analysis.
+message AnalysisStarted {
+  // Document identity, source text, and caller metadata before analysis.
+  OpenNlpDocument document = 1;
+  // Effective pipeline steps requested for the analysis.
+  repeated PipelineStep requested_steps = 2;
+}
+
+// Atomic layer update produced by one pipeline branch.
+message AnalysisLayerBatch {
+  // The branch's terminal pipeline step.
+  PipelineStep step = 1;
+  // Complete replacement values for the named layers produced by the branch.
+  repeated AnnotationLayer layers = 2;
+  // Diagnostics produced while running the branch.
+  repeated ProcessingDiagnostic diagnostics = 3;
+}
+
+// Failure of one non-backbone branch in a progressive analysis.
+message AnalysisStepFailure {
+  // The branch's terminal pipeline step.
+  PipelineStep step = 1;
+  // Canonical status code for the branch failure.
+  GrpcStatusCode code = 2;
+  // Human-readable failure description.
+  string message = 3;
+}
+
+// One frame sent by the client on an AnalyzeStream call. Exactly one
+// configuration frame must arrive first, followed by document frames.
+message AnalyzeStreamRequest {
+  // The configuration or document carried by this frame.
+  oneof message {
+    // Fixes the analysis configuration for every document on this stream.
+    AnalyzeStreamConfiguration configuration = 1;
+    // One document to analyze under the stream's fixed configuration.
+    AnalyzeStreamDocument document = 2;
+  }
+}
+
+// The document-independent portion of AnalyzeDocumentRequest, sent once when
+// opening an AnalyzeStream call. Its fields have the same semantics and merge
+// rules as the matching AnalyzeDocumentRequest fields.
+message AnalyzeStreamConfiguration {
+  // Classic single-profile usage.
+  AnalysisProfile profile = 1;
+  // Output and execution options, including offset encoding.
+  AnalysisOptions options = 2;
+  // Optional server-side profile id. An inline profile merges over this profile.
+  optional string profile_id = 3;
+  // Per-chunking-strategy configurations.
+  repeated ChunkEmbedConfigEntry chunk_embed_configs = 4;
+  // Category-driven chunking configurations.
+  repeated CategoryChunkConfigEntry category_chunk_configs = 5;
+}
+
+// One document on an AnalyzeStream call.
+message AnalyzeStreamDocument {
+  // Caller-chosen correlation number, echoed on the matching response. The
+  // server does not interpret or require uniqueness of this value.
+  uint64 sequence = 1;
+  // The document to analyze. Validation is identical to AnalyzeDocument.
+  OpenNlpDocument document = 2;
+}
+
+// One completion-ordered result from AnalyzeStream.
+message AnalyzeStreamResponse {
+  // Sequence from the corresponding AnalyzeStreamDocument.
+  uint64 sequence = 1;
+  // The successful response or per-document failure.
+  oneof result {
+    // Successful analysis, identical to AnalyzeDocument for the same inputs.
+    AnalyzeDocumentResponse ok = 2;
+    // A failure confined to this document. The stream remains usable.
+    AnalyzeStreamError error = 3;
+  }
+}
+
+// Canonical gRPC status codes that can describe a document-local stream failure.
+// Numeric values match the gRPC status-code registry. OK is intentionally omitted
+// because this enum is used only for failures.
+enum GrpcStatusCode {
+  // No error code was supplied. Servers never emit this value.
+  GRPC_STATUS_CODE_UNSPECIFIED = 0;
+  // The operation was cancelled, typically by the caller.
+  GRPC_STATUS_CODE_CANCELLED = 1;
+  // The failure does not fit another canonical status.
+  GRPC_STATUS_CODE_UNKNOWN = 2;
+  // The request contains an invalid argument.
+  GRPC_STATUS_CODE_INVALID_ARGUMENT = 3;
+  // The deadline expired before the operation completed.
+  GRPC_STATUS_CODE_DEADLINE_EXCEEDED = 4;
+  // A requested resource was not found.
+  GRPC_STATUS_CODE_NOT_FOUND = 5;
+  // A resource the caller attempted to create already exists.
+  GRPC_STATUS_CODE_ALREADY_EXISTS = 6;
+  // The caller lacks permission to perform the operation.
+  GRPC_STATUS_CODE_PERMISSION_DENIED = 7;
+  // A resource limit or quota was exhausted.
+  GRPC_STATUS_CODE_RESOURCE_EXHAUSTED = 8;
+  // The system is not in the state required for the operation.
+  GRPC_STATUS_CODE_FAILED_PRECONDITION = 9;
+  // The operation was aborted because of a concurrency conflict.
+  GRPC_STATUS_CODE_ABORTED = 10;
+  // The operation addressed data outside the valid range.
+  GRPC_STATUS_CODE_OUT_OF_RANGE = 11;
+  // The operation is not implemented or supported.
+  GRPC_STATUS_CODE_UNIMPLEMENTED = 12;
+  // An internal invariant failed.
+  GRPC_STATUS_CODE_INTERNAL = 13;
+  // The service is temporarily unavailable.
+  GRPC_STATUS_CODE_UNAVAILABLE = 14;
+  // Unrecoverable data loss or corruption occurred.
+  GRPC_STATUS_CODE_DATA_LOSS = 15;
+  // The request lacks valid authentication credentials.
+  GRPC_STATUS_CODE_UNAUTHENTICATED = 16;
+}
+
+// A per-document failure on an otherwise healthy AnalyzeStream call.
+message AnalyzeStreamError {
+  // Canonical gRPC status describing the document-local failure.
+  GrpcStatusCode code = 1;
+  // Human-readable failure description. Unexpected server details are not exposed.
+  string message = 2;
+}
+
+// A non-fatal note about a pipeline step's execution (ran, skipped, or had a
+// recoverable issue). Fatal failures abort the RPC with an error status instead.
+message ProcessingDiagnostic {
+  // The pipeline step this diagnostic concerns.
+  PipelineStep step = 1;
+  // Human-readable detail.
+  string message = 2;
+  // Severity of the note.
+  DiagnosticSeverity severity = 3;
+  // Optional key of the model/component the diagnostic relates to.
+  optional string component_key = 4;
+}
+
+// Severity of a ProcessingDiagnostic.
+enum DiagnosticSeverity {
+  // Unset/unknown severity.
+  DIAGNOSTIC_SEVERITY_UNSPECIFIED = 0;
+  // Informational (e.g. a step ran, or was skipped as not requested).
+  DIAGNOSTIC_SEVERITY_INFO = 1;
+  // A recoverable concern that did not stop processing.
+  DIAGNOSTIC_SEVERITY_WARNING = 2;
+  // A non-fatal error within a step; analysis still produced a response.
+  DIAGNOSTIC_SEVERITY_ERROR = 3;
+}
+
+// Input to GetServiceInfo. Empty; no parameters.
+message GetServiceInfoRequest {}
+
+// Server identity and capabilities returned by GetServiceInfo.
+message GetServiceInfoResponse {
+  // The underlying OpenNLP library version, or "unknown" if undetermined.
+  string opennlp_version = 1;
+  // The API version served (currently "v1").
+  string api_version = 2;
+  // Ids of the analysis profiles registered on the server (usable as profile_id).
+  repeated string available_profile_ids = 3;
+  // The pipeline steps this server actually implements, in execution order.
+  repeated PipelineStep supported_steps = 4;
+  // The closed set of OpenNLP-owned document layers this server can emit.
+  // ModelBundleInfo reports which model-backed producers are configured.
+  repeated StandardLayer supported_layers = 5;
+  // Custom tokenizer ids contributed by configured TokenizerBackendFactory providers.
+  repeated string custom_tokenizer_ids = 6;
+  // Custom sentence-detector ids contributed by configured
+  // SentenceDetectorBackendFactory providers.
+  repeated string custom_sentence_detector_ids = 7;
+  // Non-model resources loaded on this server. Model-backed capabilities and
+  // embedding routes remain in ListModelBundles. A resource is listed only after
+  // startup validation and loading succeeded, so clients can distinguish a step the
+  // binary supports from a selectable resource this instance can actually serve.
+  repeated ConfiguredResource configured_resources = 8;
+  // Maximum UTF-8 encoded text bytes accepted by every analysis or direct-embedding
+  // message. This operator limit applies even when an analysis
+  // request omits AnalysisOptions.max_text_length. Note the unit difference:
+  // AnalysisOptions.max_text_length is measured in Java UTF-16 code units, and a
+  // request-level value there can only tighten this operator limit, never raise it.
+  int32 max_text_bytes = 9;
+  // Version of this gRPC service artifact, or "dev" when running from an
+  // unpackaged development classpath.
+  string service_version = 10;
+}
+
+// Open identity for one family of configured, non-model resources. OpenNLP-owned
+// families use the closed enum; extension families use a stable custom id.
+message ResourceIdentity {
+  // The selected standard resource family or extension id.
+  oneof kind {
+    // A resource family defined by this contract.
+    StandardResource standard = 1;
+    // The stable id of an extension-provided resource family.
+    string custom = 2;
+  }
+}
+
+// OpenNLP-owned configured resource families advertised by GetServiceInfo.
+enum StandardResource {
+  // No standard resource family was selected.
+  STANDARD_RESOURCE_UNSPECIFIED = 0;
+  // A SentencePiece subword model.
+  STANDARD_RESOURCE_SUBWORD_MODEL = 1;
+  // A Hunspell affix and dictionary pair.
+  STANDARD_RESOURCE_HUNSPELL_DICTIONARY = 2;
+  // A WordNet-compatible lexical database.
+  STANDARD_RESOURCE_WORDNET_LEXICON = 3;
+  // A MeCab-format lattice-tokenizer dictionary.
+  STANDARD_RESOURCE_LATTICE_DICTIONARY = 4;
+}
+
+// One loaded non-model resource that a profile can select by id.
+message ConfiguredResource {
+  // The resource family.
+  ResourceIdentity identity = 1;
+  // The deployment-defined id within that family.
+  string resource_id = 2;
+  // True when an unqualified request resolves to this resource. False for every
+  // entry when several resources are configured and the operator selected no default.
+  bool is_default = 3;
+}
+
+// Input to ListModelBundles. Empty; no parameters.
+message ListModelBundlesRequest {}
+
+// The loaded model bundles returned by ListModelBundles.
+message ListModelBundlesResponse {
+  // One entry per model bundle loaded on the server.
+  repeated ModelBundleInfo bundles = 1;
+}
+
+// One text to embed on an EmbedText stream.
+message EmbedTextRequest {
+  // Caller-chosen correlation number, echoed back verbatim on the matching response.
+  // Responses arrive in request order regardless; this exists so pipelined callers can
+  // match responses without counting.
+  uint64 sequence = 1;
+  // The text to embed as one unit. Must not be blank (else INVALID_ARGUMENT).
+  string text = 2;
+  // The registered embedding model for this stream. Resolved on the first message
+  // (optional there when exactly one model is configured or a default_id is set); later
+  // messages may repeat it but must not name a different model (else INVALID_ARGUMENT).
+  // Setting both this field and `embedding_selector` => INVALID_ARGUMENT.
+  optional string model_id = 3;
+  // Typed model and optional backend selection. The first message fixes this selection for
+  // the stream; later messages may repeat the same selector.
+  // Setting both this field and `model_id` => INVALID_ARGUMENT.
+  optional EmbeddingSelector embedding_selector = 4;
+}
+
+// One embedding vector on an EmbedText stream, in request order.
+message EmbedTextResponse {
+  // The sequence number of the request this vector answers.
+  uint64 sequence = 1;
+  // The dense embedding vector; length matches the model's embedding dimension.
+  repeated float vector = 2;
+  // The actual backend route that produced this vector, including after fallback.
+  EmbeddingRoute route = 3;
+}
+
+// Input to ListOutputFormats. Empty; reserved for future filters.
+message ListOutputFormatsRequest {
+}
+
+// The document output formats served by this instance, in stable format-id order.
+message ListOutputFormatsResponse {
+  // One entry per deployed formatter.
+  repeated OutputFormatDescriptor formats = 1;
+}
+
+// Identity and rendering metadata of one deployed document output format.
+message OutputFormatDescriptor {
+  // Stable lowercase format id used in FormatDocumentRequest, e.g. "tsv".
+  string format_id = 1;
+  // Human-readable format name, e.g. "Token TSV".
+  string display_name = 2;
+  // IANA media type of the rendered content, e.g. "text/tab-separated-values".
+  string media_type = 3;
+  // Conventional file extension without the dot, e.g. "tsv".
+  string file_extension = 4;
+}
+
+// Input to FormatDocument: one analyzed document and the format to render it in.
+message FormatDocumentRequest {
+  // The analyzed document to render, as returned by AnalyzeDocument.
+  OpenNlpDocument document = 1;
+  // The format id of a deployed formatter (see ListOutputFormats).
+  string format_id = 2;
+}
+
+// One rendered document.
+message FormatDocumentResponse {
+  // The rendered content. Text formats are UTF-8 encoded.
+  bytes content = 1;
+  // IANA media type of the content.
+  string media_type = 2;
+  // Conventional file extension without the dot.
+  string file_extension = 3;
+}
