@@ -60,6 +60,13 @@ export interface DocumentShapeSummary {
   layerCount: number;
   annotationCount: number;
   offsetEncodingLabel: string;
+  /** Ids of layers the server returned with no annotations, in response order. */
+  emptyLayerIds: string[];
+}
+
+export interface RawDocumentShapeCounts {
+  layerCount: number;
+  annotationCount: number;
 }
 
 export type LayerAccent = "blue" | "cyan" | "green" | "amber" | "violet" | "rose";
@@ -110,7 +117,50 @@ export function summarizeDocumentShape(shape: DocumentShapeView): DocumentShapeS
     layerCount: shape.layers.length,
     annotationCount: shape.layers.reduce((total, layer) => total + layer.annotations.length, 0),
     offsetEncodingLabel: offsetEncodingLabel(shape.offsetEncoding),
+    emptyLayerIds: shape.layers.filter((layer) => layer.annotations.length === 0).map((layer) => layer.id),
   };
+}
+
+/** Counts protobuf JSON layers without materializing their annotation views. */
+export function countRawDocumentShape(response: unknown): RawDocumentShapeCounts {
+  const envelope = record(response);
+  const document = record(envelope?.document);
+  const documentLayers = record(document?.layers);
+  const values = Array.isArray(documentLayers?.layers) ? documentLayers.layers : [];
+  let layerCount = 0;
+  let annotationCount = 0;
+  for (const value of values) {
+    const layer = record(value);
+    if (!layer) {
+      continue;
+    }
+    layerCount++;
+    for (const key of VALUE_TYPES.keys()) {
+      const container = record(layer[key]);
+      if (container) {
+        annotationCount += Array.isArray(container.annotations)
+          ? container.annotations.length : 0;
+        break;
+      }
+    }
+  }
+  return { layerCount, annotationCount };
+}
+
+/**
+ * Words the completion status with the layers that came back empty, so an analysis that
+ * ran every step but produced no annotations for some of them is visible at a glance.
+ */
+export function analysisCompletionMessage(summary: DocumentShapeSummary): string {
+  if (summary.layerCount === 0) {
+    return "Analysis complete, but the response has no annotation layers.";
+  }
+  const empty = summary.emptyLayerIds;
+  if (empty.length === 0) {
+    return "Analysis complete.";
+  }
+  const noun = empty.length === 1 ? "layer" : "layers";
+  return `Analysis complete; ${empty.length} ${noun} returned no annotations: ${empty.join(", ")}.`;
 }
 
 /** Builds non-overlapping text segments carrying every positional annotation that covers them. */

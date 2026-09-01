@@ -223,6 +223,68 @@ describe("corpus workflow", () => {
     };
   }
 
+  it("indexes a large corpus in batches the server accepts, extending the index it created", async () => {
+    const order: string[] = [];
+    const workflowApi = api(order);
+    workflowApi.analyze = vi.fn(async (request) => response(
+      request.document.docId ?? "missing", request.document.rawText,
+      Boolean(request.chunkEmbedConfigs?.length)));
+    const workflow = new CorpusWorkflowWorkbench(workflowApi, callbacks());
+    await workflow.initialize();
+    const corpus = Array.from({ length: 20 }, (_, i) => `Document ${i + 1} about liberty.`).join("\n\n");
+    (document.getElementById("workflow-corpus") as HTMLTextAreaElement).value = corpus;
+    (document.getElementById("workflow-corpus") as HTMLTextAreaElement)
+      .dispatchEvent(new Event("input"));
+    (document.getElementById("workflow-run-button") as HTMLButtonElement).click();
+
+    await vi.waitFor(() => expect(document.getElementById("workflow-status")?.textContent)
+      .toContain("is built and searchable"));
+    const calls = vi.mocked(workflowApi.index).mock.calls.map((call) => call[0]);
+    expect(calls).toHaveLength(2);
+    expect(calls[0]?.indexId).toBeUndefined();
+    expect(calls[0]?.documents).toHaveLength(16);
+    expect(calls[1]?.indexId).toBe("index-1");
+    expect(calls[1]?.documents).toHaveLength(4);
+    expect(calls[1]?.displayName).toBe(calls[0]?.displayName);
+    expect(document.querySelectorAll(".workflow-analysis-card")).toHaveLength(20);
+  });
+
+  it("rejects a corpus larger than one index accepts before doing any work", async () => {
+    const order: string[] = [];
+    const workflowApi = api(order);
+    const workflow = new CorpusWorkflowWorkbench(workflowApi, callbacks());
+    await workflow.initialize();
+    const corpus = Array.from({ length: 257 }, (_, i) => `Document ${i + 1}.`).join("\n\n");
+    (document.getElementById("workflow-corpus") as HTMLTextAreaElement).value = corpus;
+    (document.getElementById("workflow-corpus") as HTMLTextAreaElement)
+      .dispatchEvent(new Event("input"));
+    (document.getElementById("workflow-run-button") as HTMLButtonElement).click();
+
+    await vi.waitFor(() => expect(document.getElementById("workflow-status")?.textContent)
+      .toContain("256"));
+    expect(document.getElementById("workflow-status")?.classList.contains("is-error")).toBe(true);
+    expect(order).toEqual([]);
+  });
+
+  it("re-evaluates the build mode once an embedding model is discovered after initialization", async () => {
+    const order: string[] = [];
+    const workflowApi = api(order);
+    workflowApi.listTeachers = vi.fn(async () => ({ teachers: [], writesEnabled: true }));
+    let discovered: { id: string; label: string } | undefined;
+    const flow = new CorpusWorkflowWorkbench(workflowApi, {
+      ...callbacks(),
+      defaultEmbeddingModel: () => discovered,
+    });
+    await flow.initialize();
+    expect(flow.mode()).toBe("unavailable");
+
+    discovered = { id: "potion", label: "potion (256d, static)" };
+    flow.refreshMode();
+    expect(flow.mode()).toBe("index-only");
+    expect(document.getElementById("workflow-status")?.textContent)
+      .toContain("Ready in analyze-and-index mode");
+  });
+
   it("says which of the two prerequisites is missing and where to get a teacher", async () => {
     const order: string[] = [];
     const workflowApi = api(order);

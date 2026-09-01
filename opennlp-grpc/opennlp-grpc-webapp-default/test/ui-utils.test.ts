@@ -21,7 +21,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { flashButtonLabel } from "../src/ui-utils";
+import { analysisFailureMessage, flashButtonLabel } from "../src/ui-utils";
 
 describe("transient button feedback", () => {
   beforeEach(() => {
@@ -57,5 +57,18 @@ describe("transient button feedback", () => {
     vi.advanceTimersByTime(1);
 
     expect(button.textContent).toBe("Copy id");
+  });
+});
+
+describe("analysisFailureMessage", () => {
+  it("replaces a raw gRPC deadline diagnostic with an explanation and keeps other errors", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    expect(analysisFailureMessage(new Error(
+      "CallOptions deadline exceeded after 47.28s. [closed=[], committed=[remote_addr=127.0.0.1:7371]]")))
+      .toMatch(/time limit.*smaller document/);
+    expect(warn).toHaveBeenCalledOnce();
+    expect(analysisFailureMessage(new Error("document.raw_text is required")))
+      .toBe("document.raw_text is required");
+    warn.mockRestore();
   });
 });

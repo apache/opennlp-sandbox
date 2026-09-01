@@ -223,6 +223,31 @@ describe("progressive analysis", () => {
     expect(events[1]).toHaveProperty("layersReady.layers.0.id", "opennlp:tokens");
     expect(response).toEqual({ document: { rawText: "Hello" } });
   });
+
+  it("assembles one large event from many network chunks", async () => {
+    const encoder = new TextEncoder();
+    const rawText = "Alice ".repeat(100_000);
+    const body = JSON.stringify({
+      sequence: "1",
+      complete: { document: { rawText } },
+    }) + "\n";
+    const fetcher = vi.fn(async () => new Response(new ReadableStream({
+      start(controller) {
+        for (let start = 0; start < body.length; start += 127) {
+          controller.enqueue(encoder.encode(body.slice(start, start + 127)));
+        }
+        controller.close();
+      },
+    }), { status: 200 }));
+
+    const response = await analyzeProgressively(
+      { document: { rawText: "Alice" } },
+      () => undefined,
+      fetcher,
+    );
+
+    expect(response.document).toEqual({ rawText });
+  });
 });
 
 describe("saved response transcoding", () => {

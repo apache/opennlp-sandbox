@@ -271,6 +271,14 @@ public final class OpenNlpSearchServiceImpl
             "DeleteSearchIndex cannot delete immutable index '" + request.getIndexId() + "'");
       }
       final boolean deleted = dynamicRegistry.delete(request.getIndexId());
+      if (deleted) {
+        // An alias to a deleted index would resolve to NOT_FOUND, and a collection listing it
+        // could not be saved again as reported, so both references go with the index.
+        aliasRegistry.deleteByIndex(request.getIndexId());
+        if (collectionRegistry != null) {
+          collectionRegistry.removeMember(request.getIndexId());
+        }
+      }
       responseObserver.onNext(DeleteSearchIndexResponse.newBuilder()
           .setIndexId(request.getIndexId())
           .setDeleted(deleted)

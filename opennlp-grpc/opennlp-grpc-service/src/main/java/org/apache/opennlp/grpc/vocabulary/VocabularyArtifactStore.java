@@ -339,6 +339,10 @@ public final class VocabularyArtifactStore {
         ? List.of() : readDictionaryHeadwords(dictionaryArtifactId);
     final List<TermCount> terms = new VocabularyLearner(
         start.getMinFrequency(), start.getMaxTerms()).learn(texts, headwords);
+    if (terms.isEmpty()) {
+      throw new IllegalArgumentException("no term reached min_frequency "
+          + start.getMinFrequency() + " in " + documents.size() + " document(s), so there is no vocabulary to publish");
+    }
     if (terms.size() > maxVocabularyTerms) {
       throw new IllegalArgumentException("learned vocabulary terms " + terms.size()
           + " exceed configured maximum " + maxVocabularyTerms);

@@ -152,6 +152,21 @@ class VocabularyArtifactStoreTest {
   }
 
   @Test
+  void refusesAVocabularyThatLearnedNoTerms() throws Exception {
+    final VocabularyArtifactStore store = enabledStore(DictionaryFormatRegistry.discover(), Map.of());
+    final LearnVocabularyStart start = LearnVocabularyStart.newBuilder()
+        .setDisplayName("too strict")
+        .setMinFrequency(999)
+        .setMaxTerms(10)
+        .setProvenanceSummary("test")
+        .build();
+    final IllegalArgumentException refused = assertThrows(IllegalArgumentException.class,
+        () -> store.learnVocabulary(start, List.of(document("the quick brown fox"))));
+    assertTrue(refused.getMessage().contains("999"), refused.getMessage());
+    assertTrue(store.listVocabularies().isEmpty(), "no artifact is published");
+  }
+
+  @Test
   void enforcesCanonicalEntryLimitBeforePublishing() throws Exception {
     final DictionaryFormatRegistry formats = DictionaryFormatRegistry.discover();
     final VocabularyArtifactStore store = enabledStore(formats,

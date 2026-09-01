@@ -514,6 +514,55 @@ public final class SearchCollectionRegistry {
   }
 
   /**
+   * Drops one index from every collection that lists it as a member, for use when the
+   * index itself is deleted, so no stored collection names an index the write API
+   * would reject. A collection left without members stays, with no members.
+   *
+   * @param indexId Dynamic index that was deleted.
+   * @return The ids of the collections that changed, in stable order.
+   * @throws UncheckedIOException If rewriting a collection fails.
+   */
+  public List<String> removeMember(String indexId) {
+    final List<DescriptionInput> candidates;
+    synchronized (this) {
+      candidates = collections.values().stream()
+          .filter(stored -> stored.configured.getMemberIndexIdsList().contains(indexId))
+          .map(stored -> new DescriptionInput(
+              stored, stored.configured, stored.integrityHash))
+          .toList();
+    }
+    final Map<DescriptionInput, CollectionDescriptor> rebuilt = new LinkedHashMap<>();
+    for (DescriptionInput candidate : candidates) {
+      final CollectionDescriptor.Builder next = candidate.configured().toBuilder().clearMemberIndexIds();
+      for (String member : candidate.configured().getMemberIndexIdsList()) {
+        if (!member.equals(indexId)) {
+          next.addMemberIndexIds(member);
+        }
+      }
+      rebuilt.put(candidate, next.build());
+    }
+    final List<String> changed = new ArrayList<>();
+    synchronized (this) {
+      for (Map.Entry<DescriptionInput, CollectionDescriptor> entry : rebuilt.entrySet()) {
+        final StoredCollection stored = entry.getKey().stored();
+        if (collections.get(entry.getValue().getCollectionId()) != stored) {
+          continue;
+        }
+        final CollectionDescriptor computed = describe(entry.getValue(), "", true);
+        final StoredCollection candidate = new StoredCollection();
+        candidate.configured = entry.getValue();
+        candidate.lastNewTerms = computed.getDrift().getNewTerms();
+        write(candidate, computed);
+        stored.configured = candidate.configured;
+        stored.lastNewTerms = candidate.lastNewTerms;
+        stored.integrityHash = candidate.integrityHash;
+        changed.add(entry.getValue().getCollectionId());
+      }
+    }
+    return List.copyOf(changed);
+  }
+
+  /**
    * Emits an index-persisted event to collections holding one member index.
    *
    * @param indexId Dynamic index that was persisted or sealed.

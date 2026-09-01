@@ -138,6 +138,27 @@ public final class IndexAliasRegistry {
   }
 
   /**
+   * Deletes every alias that resolves to one index, for use when the index itself is deleted.
+   *
+   * @param indexId Index id the aliases point at.
+   * @return The removed alias names in stable order; empty when none pointed at the index.
+   */
+  public synchronized List<String> deleteByIndex(String indexId) {
+    final List<String> removed = new ArrayList<>();
+    for (Map.Entry<String, String> entry : aliases.entrySet()) {
+      if (entry.getValue().equals(indexId)) {
+        removed.add(entry.getKey());
+      }
+    }
+    if (removed.isEmpty()) {
+      return List.of();
+    }
+    removed.forEach(aliases::remove);
+    write();
+    return List.copyOf(removed);
+  }
+
+  /**
    * Returns every alias in stable alias order.
    *
    * @return Immutable alias list.

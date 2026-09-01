@@ -17,11 +17,24 @@
  * under the License.
  */
 
-import { expect, test } from "@playwright/test";
+import { expect, test, type APIRequestContext } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
+
+/** The first embedding model the server serves, or undefined when it has none. */
+async function embeddingModelId(request: APIRequestContext): Promise<string | undefined> {
+  const listing = await request.get("/api/v1/model-bundles").then((reply) => reply.json());
+  for (const bundle of Array.isArray(listing.bundles) ? listing.bundles : []) {
+    for (const model of Array.isArray(bundle.models) ? bundle.models : []) {
+      if (model.componentType === "COMPONENT_TYPE_EMBEDDER" && typeof model.name === "string") {
+        return model.name;
+      }
+    }
+  }
+  return undefined;
+}
 
 test("scopes the hero to the Analyze tab", async ({ page }) => {
   await expect(page.locator("#playground-heading")).toBeVisible();
@@ -63,6 +76,10 @@ test("builds and searches a live corpus workflow", async ({ page }, testInfo) =>
   test.setTimeout(1_200_000);
   test.skip(process.env.OPENNLP_E2E_WORKFLOW_WRITE !== "1",
     "Set OPENNLP_E2E_WORKFLOW_WRITE=1 to create persistent vocabulary and model artifacts.");
+  const teachers = await page.request.get("/api/v1/teachers").then((reply) => reply.json());
+  test.skip((!Array.isArray(teachers.teachers) || teachers.teachers.length === 0)
+    && !(await embeddingModelId(page.request)),
+    "The server has neither a teacher nor an embedding model, so no index can be built.");
 
   await page.click('[data-workbench-tab="workflows"]');
   await expect(page.locator("#workflow-status")).toContainText("Ready");
@@ -75,7 +92,12 @@ test("builds and searches a live corpus workflow", async ({ page }, testInfo) =>
 
   await expect(page.locator("#workflow-status"))
     .toContainText("is built and searchable", { timeout: 1_100_000 });
-  await expect(page.locator('#workflow-stages [data-state="complete"]')).toHaveCount(6);
+  // A full build completes all six stages; without a teacher the vocabulary and distillation
+  // stages are marked skipped and the installed embedding model does the embedding.
+  const hasTeacher = Array.isArray(teachers.teachers) && teachers.teachers.length > 0;
+  await expect(page.locator('#workflow-stages [data-state="complete"]')).toHaveCount(hasTeacher ? 6 : 4);
+  await expect(page.locator('#workflow-stages [data-state="skipped"]')).toHaveCount(hasTeacher ? 0 : 2);
+  await expect(page.locator('#workflow-stages [data-state="error"]')).toHaveCount(0);
   await expect(page.locator(".workflow-analysis-card")).toHaveCount(2);
   await expect(page.locator("#workflow-search-heatmap .heat-document")).toHaveCount(2);
   await page.screenshot({ path: testInfo.outputPath("workflow-live.png"), fullPage: true });
@@ -89,8 +111,14 @@ test("holds inspector placeholders until a document is selected", async ({ page 
 });
 
 test("disables the TSV export with a reason until a vocabulary exists", async ({ page }) => {
+  const vocabularies = await page.request.get("/api/v1/vocabularies").then((reply) => reply.json());
   await page.click('[data-workbench-tab="trainer"]');
+  await expect(page.locator("#trainer-status")).not.toHaveText(/Loading/);
   const button = page.locator("#trainer-download-tsv-button");
-  await expect(button).toBeDisabled();
-  await expect(button).toHaveAttribute("title", /vocabulary/);
+  if (Array.isArray(vocabularies.vocabularies) && vocabularies.vocabularies.length > 0) {
+    await expect(button).toBeEnabled();
+  } else {
+    await expect(button).toBeDisabled();
+    await expect(button).toHaveAttribute("title", /vocabulary/);
+  }
 });

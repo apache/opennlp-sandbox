@@ -187,7 +187,7 @@ describe("lifecycle workbench", () => {
 
     const vocabularies = document.getElementById("collection-vocabulary-id") as HTMLSelectElement;
     expect(Array.from(vocabularies.options).map((option) => option.textContent))
-      .toEqual(["No vocabulary (coverage not measured)", "Legal vocabulary (4812 terms)"]);
+      .toEqual(["No vocabulary (coverage not measured)", "Legal vocabulary (4812 terms) · legal"]);
     const dictionaries = document.getElementById("collection-dictionary-id") as HTMLSelectElement;
     expect(Array.from(dictionaries.options).map((option) => option.value))
       .toEqual(["", "dictionary-legal"]);

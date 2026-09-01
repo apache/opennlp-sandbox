@@ -37,7 +37,12 @@ npx playwright install chromium   # once
 OPENNLP_E2E_BASE_URL=http://127.0.0.1:7072 npm run e2e
 ```
 
-Tests that depend on optional server state, such as a configured read-only corpus index, skip
+The `regression-*.spec.ts` files guard against analyses, vocabularies, and indexes that
+complete with empty results: they analyze a sentence, a paragraph, a page, and the bundled
+novel and require every returned layer to have annotations and every projection to have
+content; they learn vocabularies from two, twenty, and a few hundred documents and require
+the term count to grow; and they build indexes from two and twenty documents and require
+the document and hit counts to match. Tests that depend on optional server state, such as a configured read-only corpus index, skip
 with a reason instead of failing. Specs that leave artifacts behind on the server, the workflow
 build and learning a vocabulary, run only with `OPENNLP_E2E_WORKFLOW_WRITE=1`. `tsc --noEmit` type-checks the suite as part of `npm test`, so
 the Maven build still catches compile drift in the specs.

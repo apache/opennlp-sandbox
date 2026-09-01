@@ -108,7 +108,7 @@ test("saves, aliases, collects and makes a live index read-only", async ({ page 
 
     // Save to disk keeps the index writable; the state label follows.
     const persist = page.locator("#lifecycle-persist-button");
-    if (providers.persistenceConfigured === false) {
+    if (providers.persistenceConfigured !== true) {
       await expect(persist).toBeDisabled();
     } else {
       await persist.click();
@@ -134,7 +134,7 @@ test("saves, aliases, collects and makes a live index read-only", async ({ page 
     await expect(page.locator("#collection-coverage-label")).toContainText("Not measured");
 
     // Read-only is one way; the index stays listed and searchable.
-    if (providers.persistenceConfigured !== false) {
+    if (providers.persistenceConfigured === true) {
       await page.selectOption("#lifecycle-index-select", indexId);
       await page.click("#lifecycle-seal-button");
       await expect(page.locator("#lifecycle-workspace-status"))

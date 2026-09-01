@@ -79,10 +79,12 @@ import { ChunkProjectionView } from "./chunk-projection-view";
 import { CorpusWorkflowWorkbench } from "./corpus-workflow";
 import {
   combinedAnnotationSegments,
+  countRawDocumentShape,
   documentAnnotationChips,
   isDefaultOverlayLayer,
   layerAccent,
   readDocumentShape,
+  analysisCompletionMessage,
   summarizeDocumentShape,
   type AnnotationEntry,
   type AnnotationLayerView,
@@ -128,7 +130,12 @@ import {
   readUiExtensions,
   type UiExtension,
 } from "./ui-extensions";
-import { errorMessage, flashButtonLabel, requiredElement } from "./ui-utils";
+import {
+  analysisFailureMessage,
+  errorMessage,
+  flashButtonLabel,
+  requiredElement,
+} from "./ui-utils";
 import {
   readDictionaryFormats,
   readDictionaries,
@@ -498,6 +505,7 @@ async function initialize(): Promise<void> {
   const bundlesInfo = bundlesResult.status === "fulfilled" ? bundlesResult.value : undefined;
   const capabilities = analysisControls.configure(serviceInfo, bundlesInfo);
   workflowCapabilities = capabilities;
+  corpusWorkflow.refreshMode();
   modelDataWorkbench.configure(capabilities);
   const profiles = capabilities.profiles;
   const bundles = capabilities.bundles;
@@ -651,7 +659,12 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
     renderXray(response);
     semanticWorkbench.setDocument(text, shape, response);
     selectResultTab("document");
-    setFormStatus("Analysis complete.");
+    if (progressive.failures.length > 0) {
+      setFormStatus(`Analysis finished, but ${progressive.failures.length === 1 ? "one step" : `${progressive.failures.length} steps`} `
+        + `failed: ${progressive.failures.join(" ")}`, true);
+    } else {
+      setFormStatus(analysisCompletionMessage(summarizeDocumentShape(shape)));
+    }
     revealAnalysisResult();
   } catch (error) {
     currentJson = "";
@@ -662,23 +675,36 @@ async function submitAnalysis(event: SubmitEvent): Promise<void> {
     downloadPbButton.disabled = true;
     normalizationXray.hidden = true;
     responseOutput.textContent = "The analysis request did not complete.";
-    setFormStatus(errorMessage(error, "Analysis failed. Please try again."), true);
+    setFormStatus(analysisFailureMessage(error), true);
   } finally {
     renderQueue.cancel();
     setBusy(false);
   }
 }
 
+/**
+ * Annotations beyond which intermediate frames are not drawn: rebuilding the overlay for
+ * every event on a novel-sized document takes longer than the stream itself and stalls the
+ * reader, so only the counts update until the final response arrives.
+ */
+const PROGRESSIVE_RENDER_ANNOTATION_LIMIT = 20_000;
+
 /** Renders the currently available layer set without serializing a partial JSON reply. */
 function renderProgressiveState(
   state: ProgressiveAnalysisState,
   request: AnalyzeRequest,
 ): void {
-  const shape = readDocumentShape(state.response);
   const changed = new Set(state.updatedLayerIds);
   currentResponse = state.response;
   currentRequest = request;
-  renderDocumentShape(shape);
+  const counts = countRawDocumentShape(state.response);
+  if (counts.annotationCount <= PROGRESSIVE_RENDER_ANNOTATION_LIMIT) {
+    const shape = readDocumentShape(state.response);
+    renderDocumentShape(shape);
+  } else {
+    resultLayerCount.textContent = String(counts.layerCount);
+    resultAnnotationCount.textContent = String(counts.annotationCount);
+  }
   if (state.sequence === 1 || changed.has("opennlp:chunk-groups")) {
     chunkProjectionView.render(state.response);
   }
@@ -688,9 +714,8 @@ function renderProgressiveState(
   if (state.sequence === 1 || changed.has("opennlp:language")) {
     renderLanguageSummary(state.response);
   }
-  const summary = summarizeDocumentShape(shape);
-  responseOutput.textContent = `Streaming progressive results: ${summary.layerCount} `
-    + `${summary.layerCount === 1 ? "layer" : "layers"} ready.`;
+  responseOutput.textContent = `Streaming progressive results: ${counts.layerCount} `
+    + `${counts.layerCount === 1 ? "layer" : "layers"} ready.`;
   if (state.failures.length > 0) {
     setFormStatus(state.failures[state.failures.length - 1]!, true);
   } else if (state.lastStep) {
@@ -821,6 +846,10 @@ function renderDocumentShape(shape: DocumentShapeView): void {
     count.textContent = String(layer.annotations.length);
     button.append(name, count);
     button.title = `${layer.id}, ${layer.valueType}`;
+    if (layer.annotations.length === 0) {
+      button.dataset.empty = "true";
+      button.title += ", no annotations in this response";
+    }
     button.addEventListener("click", () => selectLayer(shape, layer));
     layerList.append(button);
   }
@@ -1311,7 +1340,7 @@ const LARGE_EMBEDDING_WARNING_BYTES = 256 * 1024;
 /** Whether a request asks for document or chunk embeddings. */
 function requestsEmbeddings(request: AnalyzeRequest): boolean {
   return Boolean(request.options?.embeddingModelId)
-    || (request.chunkEmbedConfigs?.length ?? 0) > 0;
+    || (request.chunkEmbedConfigs ?? []).some((config) => (config.embeddingModelIds?.length ?? 0) > 0);
 }
 
 /** Mebibytes with one decimal, for a size a person reads. */

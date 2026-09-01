@@ -496,21 +496,28 @@ async function* ndjsonLines(response: Response): AsyncGenerator<string> {
   }
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
-  let buffered = "";
+  let pending: string[] = [];
   for (;;) {
     const { done, value } = await reader.read();
-    buffered += done ? decoder.decode() : decoder.decode(value, { stream: true });
+    const decoded = done ? decoder.decode() : decoder.decode(value, { stream: true });
+    let start = 0;
     let newline;
-    while ((newline = buffered.indexOf("\n")) >= 0) {
-      const line = buffered.slice(0, newline);
-      buffered = buffered.slice(newline + 1);
+    while ((newline = decoded.indexOf("\n", start)) >= 0) {
+      pending.push(decoded.slice(start, newline));
+      const line = pending.join("");
+      pending = [];
       if (line.trim()) {
         yield line;
       }
+      start = newline + 1;
+    }
+    if (start < decoded.length) {
+      pending.push(decoded.slice(start));
     }
     if (done) {
-      if (buffered.trim()) {
-        yield buffered;
+      const line = pending.join("");
+      if (line.trim()) {
+        yield line;
       }
       return;
     }

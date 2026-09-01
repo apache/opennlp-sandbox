@@ -20,8 +20,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  analysisCompletionMessage,
   annotationConfidence,
   combinedAnnotationSegments,
+  countRawDocumentShape,
   documentAnnotationChips,
   documentScopedAnnotations,
   isDefaultOverlayLayer,
@@ -208,9 +210,58 @@ describe("document shape reader", () => {
       layerCount: 2,
       annotationCount: 3,
       offsetEncodingLabel: "UTF-16",
+      emptyLayerIds: [],
     });
     expect(layerAccent(shape.layers[0]!)).toBe("cyan");
     expect(layerAccent(shape.layers[1]!)).toBe("violet");
+  });
+
+  it("counts a large progressive response without reading annotation entries", () => {
+    const annotations = new Proxy([{ value: "one" }, { value: "two" }], {
+      get(target, property, receiver) {
+        if (property !== "length") {
+          throw new Error(`annotation entry access is not allowed: ${String(property)}`);
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
+
+    expect(countRawDocumentShape({
+      document: {
+        layers: { layers: [
+          { id: "opennlp:tokens", stringValues: { annotations } },
+          { id: "opennlp:entities", entityValues: { annotations: [] } },
+        ] },
+      },
+    })).toEqual({ layerCount: 2, annotationCount: 2 });
+  });
+
+  it("names the layers that came back without annotations", () => {
+    const shape = readDocumentShape({
+      document: {
+        rawText: "Text",
+        layers: {
+          layers: [
+            { id: "opennlp:tokens", scope: "LAYER_SCOPE_POSITIONAL",
+              stringValues: { annotations: [{ span: { start: 0, end: 4 }, value: "Text" }] } },
+            { id: "opennlp:entities", scope: "LAYER_SCOPE_POSITIONAL", stringValues: { annotations: [] } },
+            { id: "opennlp:chunks", scope: "LAYER_SCOPE_POSITIONAL" },
+          ],
+        },
+      },
+    });
+    expect(summarizeDocumentShape(shape).emptyLayerIds).toEqual(["opennlp:entities", "opennlp:chunks"]);
+  });
+
+  it("words the completion status by how many layers came back empty", () => {
+    const base = { layerCount: 3, annotationCount: 5, offsetEncodingLabel: "UTF-16" };
+    expect(analysisCompletionMessage({ ...base, emptyLayerIds: [] })).toBe("Analysis complete.");
+    expect(analysisCompletionMessage({ ...base, emptyLayerIds: ["opennlp:entities"] }))
+      .toBe("Analysis complete; 1 layer returned no annotations: opennlp:entities.");
+    expect(analysisCompletionMessage({ ...base, emptyLayerIds: ["opennlp:entities", "opennlp:chunks"] }))
+      .toBe("Analysis complete; 2 layers returned no annotations: opennlp:entities, opennlp:chunks.");
+    expect(analysisCompletionMessage({ ...base, layerCount: 0, annotationCount: 0, emptyLayerIds: [] }))
+      .toBe("Analysis complete, but the response has no annotation layers.");
   });
 
   it("formats delimiter-separated layer names and matches ASCII identities without locale casing", () => {

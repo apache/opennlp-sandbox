@@ -29,10 +29,11 @@ import {
 } from "./search-adapter";
 import { ellipsizeCodePoints, formatInteger } from "./text-utils";
 import { addFact, emptyMessage, errorMessage, requiredElement } from "./ui-utils";
-import type {
-  DictionaryArtifactSummary,
-  TrainedModelSummary,
-  VocabularyArtifactSummary,
+import {
+  type DictionaryArtifactSummary,
+  type TrainedModelSummary,
+  type VocabularyArtifactSummary,
+  vocabularyOptionLabel,
 } from "./vocabulary-trainer";
 
 export interface LifecycleApi {
@@ -162,7 +163,7 @@ export class LifecycleWorkbench {
       this.renderArtifactOptions(this.#collectionVocabulary, "No vocabulary (coverage not measured)",
         vocabularies.map((vocabulary) => ({
           value: vocabulary.artifactId,
-          label: `${vocabulary.displayName} (${vocabulary.termCount} terms)`,
+          label: vocabularyOptionLabel(vocabulary),
         })));
       this.renderCollectionOptions(collections);
       if (this.#indexes.length === 0) {

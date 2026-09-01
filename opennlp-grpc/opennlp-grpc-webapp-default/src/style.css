@@ -439,6 +439,7 @@ select:disabled { cursor: not-allowed; opacity: 0.6; }
 .layer-button { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%; padding: 0.6rem 0.65rem; border: 1px solid transparent; border-radius: 0.45rem; background: transparent; color: var(--muted); text-align: left; }
 .layer-button span { overflow: hidden; font-size: 0.7rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
 .layer-button small { min-width: 1.4rem; padding: 0.12rem 0.3rem; border-radius: 999px; background: var(--tag-bg); color: var(--muted); font-size: 0.6rem; text-align: center; }
+.layer-button[data-empty="true"] small { background: transparent; border: 1px dashed var(--muted); }
 .layer-button:hover { background: var(--surface-hover); color: var(--text-strong); }
 .layer-button[aria-pressed="true"] { border-color: var(--layer-accent); background: var(--layer-soft); color: var(--layer-accent); box-shadow: inset 3px 0 0 var(--layer-accent); }
 
@@ -1483,7 +1484,7 @@ main { overflow: clip; margin-top: 1rem; }
   border-radius: 999px;
   background: var(--well);
 }
-.coverage-meter i { display: block; height: 100%; background: #16835a; transition: width 0.3s ease; }
+.coverage-meter i { display: block; width: 0; height: 100%; background: #16835a; transition: width 0.3s ease; }
 .coverage-label { margin: 0.3rem 0 0; color: var(--muted); font-size: 0.7rem; }
 .collection-term-statistics { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .term-statistic {

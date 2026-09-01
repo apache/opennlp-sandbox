@@ -366,7 +366,7 @@ public class OpenNlpAnalysisServiceImpl extends OpenNlpAnalysisServiceGrpc.OpenN
   /** Serializes progressive writes and waits for outbound transport capacity. */
   private static final class ProgressiveResponseWriter {
 
-    private static final long READY_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(30);
+    private static final long READY_TIMEOUT_NANOS = TimeUnit.MINUTES.toNanos(30);
 
     private final StreamObserver<AnalyzeDocumentEvent> responseObserver;
     private final ServerCallStreamObserver<AnalyzeDocumentEvent> serverObserver;

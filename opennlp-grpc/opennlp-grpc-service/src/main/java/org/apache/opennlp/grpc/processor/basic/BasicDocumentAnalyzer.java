@@ -537,12 +537,8 @@ public class BasicDocumentAnalyzer implements ProgressiveDocumentAnalyzer {
     }
 
     if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_STEM)) {
-      if (!shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
-        throw AnalysisException.failedPrecondition(
-            PipelineStep.PIPELINE_STEP_STEM.name()
-                + " requires "
-                + PipelineStep.PIPELINE_STEP_TOKENIZE.name());
-      }
+      // The profile-level dependency on TOKENIZE is validated once per request; here the
+      // tokens may come from a progressive backbone, so only their presence is checked.
       requireTokens(document, PipelineStep.PIPELINE_STEP_STEM);
       runStep(
           PipelineStep.PIPELINE_STEP_STEM,
@@ -569,12 +565,6 @@ public class BasicDocumentAnalyzer implements ProgressiveDocumentAnalyzer {
 
     final String wordNetLexiconId = validator.resolveWordNetLexiconId(profile);
     if (shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_EXPAND)) {
-      if (!shouldRunStep(effectiveSteps, PipelineStep.PIPELINE_STEP_TOKENIZE)) {
-        throw AnalysisException.failedPrecondition(
-            PipelineStep.PIPELINE_STEP_EXPAND.name()
-                + " requires "
-                + PipelineStep.PIPELINE_STEP_TOKENIZE.name());
-      }
       requireTokens(document, PipelineStep.PIPELINE_STEP_EXPAND);
       runStep(
           PipelineStep.PIPELINE_STEP_EXPAND,

@@ -40,7 +40,7 @@ import {
 } from "./search-adapter";
 import { matchedSegments, scoreColor } from "./search-view-model";
 import { formatInteger, splitBlankLineDocuments } from "./text-utils";
-import { errorMessage, requiredElement } from "./ui-utils";
+import { errorMessage, plural, requiredElement } from "./ui-utils";
 import type {
   DictionaryArtifactSummary,
   TeacherOption,
@@ -101,6 +101,10 @@ interface AnalyzedDocument {
 
 const STAGES: WorkflowStage[] = ["analyze", "vocabulary", "train", "embed", "index", "search"];
 const FLAT_FLOAT_PROVIDER = "STANDARD_SEARCH_PROVIDER_FLAT_FLOAT";
+/** Documents one IndexDocuments call accepts; larger corpora extend the index in batches. */
+export const MAX_DOCUMENTS_PER_INDEX_REQUEST = 16;
+/** Documents one live index accepts in total. */
+export const MAX_DOCUMENTS_PER_INDEX = 256;
 
 /** Runs the beginner-facing corpus, model, index, and search workflow. */
 export class CorpusWorkflowWorkbench {
@@ -132,6 +136,9 @@ export class CorpusWorkflowWorkbench {
   #ready = false;
   #mode: BuildMode = "unavailable";
   #busy = false;
+  /** What the server reported at initialization, so the mode can be chosen again later. */
+  #writesEnabled = false;
+  #hasTeacher = false;
   /** The state badges in the tab header and drawer; absent in unit fixtures. */
   readonly #modeBadge = document.getElementById("workflow-mode-badge");
   readonly #optionSummary = document.getElementById("workflow-option-summary");
@@ -165,7 +172,9 @@ export class CorpusWorkflowWorkbench {
       this.populateDictionaries(dictionaries);
       this.populateTeachers(teachers.teachers);
       this.populateProviders(providers);
-      this.chooseMode(teachers.writesEnabled, teachers.teachers.length > 0);
+      this.#writesEnabled = teachers.writesEnabled;
+      this.#hasTeacher = teachers.teachers.length > 0;
+      this.chooseMode(this.#writesEnabled, this.#hasTeacher);
     } catch (error) {
       this.#ready = false;
       this.#mode = "unavailable";
@@ -178,6 +187,20 @@ export class CorpusWorkflowWorkbench {
   /** The build the server can run, for tests and for the header badge. */
   mode(): BuildMode {
     return this.#mode;
+  }
+
+  /**
+   * Chooses the mode again with the current embedding models. Discovery of the analysis
+   * capabilities finishes after this tab initializes, so a server with an embedding model
+   * but no teacher would otherwise stay on "nothing can be built".
+   */
+  refreshMode(): void {
+    if (this.#busy || this.#mode === "full") {
+      return;
+    }
+    this.chooseMode(this.#writesEnabled, this.#hasTeacher);
+    this.renderMode();
+    this.updateControls();
   }
 
   /**
@@ -243,6 +266,11 @@ export class CorpusWorkflowWorkbench {
       this.setStatus("Add at least one document and a first search query.", true);
       return;
     }
+    if (documents.length > MAX_DOCUMENTS_PER_INDEX) {
+      this.setStatus(`A live index takes at most ${MAX_DOCUMENTS_PER_INDEX} documents; `
+        + `the corpus has ${documents.length}. Remove some or split it.`, true);
+      return;
+    }
     this.#busy = true;
     this.#index = undefined;
     this.#model = undefined;
@@ -290,12 +318,8 @@ export class CorpusWorkflowWorkbench {
       this.complete("embed", `${embedded.length} embedded ${plural(embedded.length, "document")}`);
 
       this.activate("index", "Building the searchable index");
-      this.#index = await this.#api.index({
-        displayName,
-        provider: { standard: this.#provider.value || FLAT_FLOAT_PROVIDER },
-        documents: embedded.map((document) => indexDocument(document.response)),
-        embedding: { modelId: this.#model.artifactId },
-      });
+      this.#index = await this.buildIndex(displayName,
+        embedded.map((document) => indexDocument(document.response)), this.#model.artifactId);
       this.complete("index", `${formatInteger(this.#index.size ?? 0)} searchable chunks`);
       this.#callbacks.onIndexChanged(this.#index);
 
@@ -339,6 +363,37 @@ export class CorpusWorkflowWorkbench {
   }
 
   /**
+   * Creates the index from the first batch of documents and extends it with the rest, since
+   * one IndexDocuments call accepts at most {@link MAX_DOCUMENTS_PER_INDEX_REQUEST} documents.
+   */
+  private async buildIndex(
+    displayName: string,
+    documents: Array<Record<string, unknown>>,
+    modelId: string,
+  ): Promise<SearchIndex> {
+    const provider = { standard: this.#provider.value || FLAT_FLOAT_PROVIDER };
+    let index: SearchIndex | undefined;
+    for (let start = 0; start < documents.length; start += MAX_DOCUMENTS_PER_INDEX_REQUEST) {
+      const batch = documents.slice(start, start + MAX_DOCUMENTS_PER_INDEX_REQUEST);
+      if (documents.length > MAX_DOCUMENTS_PER_INDEX_REQUEST) {
+        this.setStageDetail("index",
+          `Indexing documents ${start + 1} to ${start + batch.length} of ${documents.length}`);
+      }
+      index = await this.#api.index({
+        ...(index ? { indexId: index.id } : {}),
+        displayName,
+        provider,
+        documents: batch,
+        embedding: { modelId },
+      });
+    }
+    if (!index) {
+      throw new Error("No documents to index.");
+    }
+    return index;
+  }
+
+  /**
    * The analyze-and-index build: the vocabulary and distillation stages are marked
    * skipped, the documents are embedded with the installed model, and the index is built
    * and searched exactly as in a full build.
@@ -358,12 +413,8 @@ export class CorpusWorkflowWorkbench {
     const embedded = await this.analyzeDocuments(documents, model.id);
     this.complete("embed", `${embedded.length} embedded ${plural(embedded.length, "document")}`);
     this.activate("index", "Building the searchable index");
-    this.#index = await this.#api.index({
-      displayName,
-      provider: { standard: this.#provider.value || FLAT_FLOAT_PROVIDER },
-      documents: embedded.map((document) => indexDocument(document.response)),
-      embedding: { modelId: model.id },
-    });
+    this.#index = await this.buildIndex(displayName,
+      embedded.map((document) => indexDocument(document.response)), model.id);
     this.complete("index", `${formatInteger(this.#index.size ?? 0)} searchable chunks`);
     this.#callbacks.onIndexChanged(this.#index);
     await this.runSearch(query);
@@ -645,10 +696,6 @@ function positiveInteger(value: string, fallback: number): number {
 function nonNegativeInteger(value: string, fallback: number): number {
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : fallback;
-}
-
-function plural(count: number, singular: string): string {
-  return count === 1 ? singular : `${singular}s`;
 }
 
 function record(value: unknown): Record<string, unknown> {

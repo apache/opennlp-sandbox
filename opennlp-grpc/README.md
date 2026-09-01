@@ -23,6 +23,53 @@ New here? [QUICKSTART.md](QUICKSTART.md) goes from a clean checkout to
 analyzing, training, and searching in a few minutes, in the browser and from
 Python, Node.js, Java, or Go.
 
+## Features
+
+Analysis, over gRPC or the protobuf JSON gateway, one request per document or a stream:
+
+- Language detection, normalization, sentence detection, tokenization, subword tokenization,
+  POS tagging, lemmatization, stemming, term vectors, lexical expansion, name finding,
+  geocoding, document categorization, sentiment, constituency parsing, dependency parsing and
+  relation extraction, syntactic chunking, embedding, and semantic chunking, each a pipeline
+  step a profile turns on.
+- Results in the OpenNLP 3.0 document shape: typed, namespaced annotation layers over the
+  original text, validated by the Java container before they go on the wire.
+- Progressive analysis that streams layers as their branches finish.
+- Per-language classic pipelines with automatic routing by detected language.
+- Output formats (CoNLL-U, CSV, Markdown report, WARC) and a gRPC document sink.
+- Unicode text analysis without models: UAX 29 word classes, stopwords, offset-safe
+  normalization with alignment.
+
+Models and inference:
+
+- Bundled language detector and English sentence, token, POS, and lemma models; any Apache
+  OpenNLP model by configuration.
+- Name finders: maxent models, dictionaries, regular expressions, ONNX token classifiers.
+- Document categorizers and sentiment: OpenNLP models or ONNX classifiers.
+- Embeddings: ONNX sentence transformers on CPU or CUDA, static embedding tables, remote
+  HuggingFace TEI and OpenVINO Model Server backends.
+- A checksum-pinned model catalog with license consent, installable from the API, the
+  workbench, or the `install-resource` CLI.
+- SPI contracts for custom segmentation, NER, categorizer, and embedding backends.
+
+Training and search:
+
+- Dictionary import and vocabulary learning from pasted or uploaded documents.
+- Static embedding model distillation from a learned vocabulary and a teacher model.
+- Live vector indexes over analyzed documents, persisted, aliased, and sealed; flat-float,
+  terms, quantized TurboQuant, and Lucene BM25 providers; compound queries.
+- Immutable search bundles built offline and served read-only.
+- Vocabulary and model artifacts on a local directory or S3.
+
+Workbench and operations:
+
+- Browser workbench: Analyze (highlights, chunks, heatmap, graph, protobuf JSON), Build
+  index, Corpus search, Live index search, Models & data, Trainer, Lifecycle.
+- Static UI extensions through a ServiceLoader API.
+- Slim server jar plus add-on jars, or one `opennlp-grpc-server-all` jar; Docker images;
+  clients for Python, Node.js, Java, and Go.
+- Capability discovery that separates what the binary supports from what is configured.
+
 ## The document shape
 
 Every `AnalyzeDocument` response also renders its results as the OpenNLP 3.0

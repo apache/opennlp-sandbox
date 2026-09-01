@@ -31,6 +31,8 @@ import {
   readTeachers,
   readTrainedModel,
   VocabularyTrainerWorkbench,
+  readVocabularies,
+  vocabularyOptionLabels,
   type TrainedModelSummary,
   type TrainerApi,
 } from "../src/vocabulary-trainer";
@@ -385,10 +387,27 @@ describe("trainer workbench", () => {
       .toEqual(["Corpus terms only", "Legal dictionary (80 entries)"]);
     const vocabularies = document.getElementById("trainer-vocabulary-select") as HTMLSelectElement;
     expect(Array.from(vocabularies.options).map((option) => option.textContent))
-      .toEqual(["Legal vocabulary (4812 terms)"]);
+      .toEqual(["Legal vocabulary (4812 terms) · legal"]);
     expect(vocabularies.disabled).toBe(false);
     // A vocabulary learned on an earlier run is exportable without learning it again.
     expect((document.getElementById("trainer-download-tsv-button") as HTMLButtonElement).disabled)
       .toBe(false);
+  });
+});
+
+describe("vocabulary picker labels", () => {
+  it("tells duplicate names apart by their artifact id, uses singular for one term, and lists the newest first", () => {
+    const vocabularies = readVocabularies({
+      vocabularies: [
+        { artifactId: "vocabulary-older-000", displayName: "Same name", termCount: 1,
+          createdAt: "2026-01-01T00:00:00Z" },
+        { artifactId: "vocabulary-newer-111", displayName: "Same name", termCount: 12,
+          createdAt: "2026-02-01T00:00:00Z" },
+      ],
+    });
+    expect(vocabularyOptionLabels(vocabularies)).toEqual([
+      "Same name (12 terms) · newer-111",
+      "Same name (1 term) · older-000",
+    ]);
   });
 });

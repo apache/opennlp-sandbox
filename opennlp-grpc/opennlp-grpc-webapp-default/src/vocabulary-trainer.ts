@@ -28,7 +28,7 @@ import {
   splitBlankLineDocuments,
   timestampLabel,
 } from "./text-utils";
-import { flashButtonLabel, requiredElement } from "./ui-utils";
+import { flashButtonLabel, plural, requiredElement } from "./ui-utils";
 
 const CARRIAGE_RETURN = "\r";
 const LINE_FEED = "\n";
@@ -51,6 +51,31 @@ export interface VocabularyArtifactSummary {
   termCount: number;
   /** The dictionary the vocabulary was seeded from, when it had one. */
   dictionaryArtifactId?: string;
+  /** RFC 3339 creation time, when the server reports one. */
+  createdAt?: string;
+}
+
+/** The artifact id prefix every vocabulary shares and a picker label leaves out. */
+const VOCABULARY_ID_PREFIX = "vocabulary-";
+
+/** The characters of an artifact id shown after the display name, so equal names differ. */
+const SHORT_ID_LENGTH = 12;
+
+/** Labels a vocabulary for a picker: name, term count, and the tail of its artifact id. */
+export function vocabularyOptionLabel(vocabulary: VocabularyArtifactSummary): string {
+  const id = vocabulary.artifactId.startsWith(VOCABULARY_ID_PREFIX)
+    ? vocabulary.artifactId.slice(VOCABULARY_ID_PREFIX.length) : vocabulary.artifactId;
+  const tail = id.slice(-SHORT_ID_LENGTH);
+  return `${vocabulary.displayName} (${vocabulary.termCount} ${plural(vocabulary.termCount, "term")}) · ${tail}`;
+}
+
+/** Orders vocabularies newest first, when the server reports creation times, and labels them. */
+export function vocabularyOptionLabels(vocabularies: VocabularyArtifactSummary[]): string[] {
+  return sortNewestFirst(vocabularies).map(vocabularyOptionLabel);
+}
+
+function sortNewestFirst(vocabularies: VocabularyArtifactSummary[]): VocabularyArtifactSummary[] {
+  return [...vocabularies].sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
 }
 
 export interface TeacherOption {
@@ -203,7 +228,8 @@ export class VocabularyTrainerWorkbench {
     this.#dictionarySelect.replaceChildren(new Option("Corpus terms only", ""));
     for (const dictionary of dictionaries) {
       this.#dictionarySelect.add(new Option(
-        `${dictionary.displayName} (${dictionary.entryCount} entries)`, dictionary.artifactId));
+        `${dictionary.displayName} (${dictionary.entryCount} ${plural(dictionary.entryCount, "entry", "entries")})`,
+        dictionary.artifactId));
     }
     this.#dictionarySelect.value = selected;
     if (this.#dictionarySelect.selectedIndex < 0) {
@@ -215,9 +241,9 @@ export class VocabularyTrainerWorkbench {
   /** Offers every vocabulary already on the server, so a restart does not hide them. */
   private renderVocabularyOptions(vocabularies: VocabularyArtifactSummary[]): void {
     const selected = this.#vocabularySelect.value;
-    populate(this.#vocabularySelect, vocabularies.map((vocabulary) => ({
+    populate(this.#vocabularySelect, sortNewestFirst(vocabularies).map((vocabulary) => ({
       value: vocabulary.artifactId,
-      label: `${vocabulary.displayName} (${vocabulary.termCount} terms)`,
+      label: vocabularyOptionLabel(vocabulary),
     })), "No vocabularies learned yet");
     if (vocabularies.some((vocabulary) => vocabulary.artifactId === selected)) {
       this.#vocabularySelect.value = selected;
@@ -266,9 +292,8 @@ export class VocabularyTrainerWorkbench {
         },
         documents,
       });
-      addOption(this.#vocabularySelect, vocabulary.artifactId,
-        `${vocabulary.displayName} (${vocabulary.termCount} terms)`);
-      this.setStatus(`Learned ${vocabulary.termCount} terms `
+      addOption(this.#vocabularySelect, vocabulary.artifactId, vocabularyOptionLabel(vocabulary));
+      this.setStatus(`Learned ${vocabulary.termCount} ${plural(vocabulary.termCount, "term")} `
         + `(${vocabulary.dictionaryTermCount} dictionary, ${vocabulary.corpusTermCount} corpus).`);
     });
   }
@@ -477,6 +502,8 @@ export function readVocabularies(value: unknown): VocabularyArtifactSummary[] {
       termCount: asCount(vocabulary.termCount),
       ...(typeof vocabulary.dictionaryArtifactId === "string" && vocabulary.dictionaryArtifactId
         ? { dictionaryArtifactId: vocabulary.dictionaryArtifactId } : {}),
+      ...(typeof vocabulary.createdAt === "string" && vocabulary.createdAt
+        ? { createdAt: vocabulary.createdAt } : {}),
     }];
   });
 }

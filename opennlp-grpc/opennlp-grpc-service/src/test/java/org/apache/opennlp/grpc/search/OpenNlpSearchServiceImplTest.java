@@ -37,6 +37,7 @@ import org.apache.opennlp.grpc.v1.CoordinateSpace;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexRequest;
 import org.apache.opennlp.grpc.v1.DeleteSearchIndexResponse;
 import org.apache.opennlp.grpc.v1.EmbeddingRoute;
+import org.apache.opennlp.grpc.v1.IndexAlias;
 import org.apache.opennlp.grpc.v1.IndexDocumentsResponse;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesRequest;
 import org.apache.opennlp.grpc.v1.ListSearchIndexesResponse;
@@ -811,6 +812,67 @@ class OpenNlpSearchServiceImplTest {
     service.searchIndex(request("legal", "query", 1), observer);
 
     assertEquals(Status.Code.INTERNAL, Status.fromThrowable(observer.error).getCode());
+  }
+
+  @Test
+  void deleteSearchIndexDropsItsAliasesAndCollectionMembership() {
+    final DynamicSearchIndexRegistry dynamicRegistry = new DynamicSearchIndexRegistry();
+    final EmbeddingRoute workspaceRoute = EmbeddingRoute.newBuilder()
+        .setModelId("demo")
+        .setBackendId("static")
+        .setVectorSpaceId("demo-space")
+        .build();
+    final IndexAliasRegistry aliases = IndexAliasRegistry.inMemory();
+    final OpenNlpSearchServiceImpl service = new OpenNlpSearchServiceImpl(
+        new SearchIndexRegistry(List.of()),
+        dynamicRegistry,
+        new StubEmbeddingProvider(workspaceRoute, 2, List.of(workspaceRoute),
+            new float[] {1, 0}),
+        aliases,
+        SearchCollectionRegistry.inMemory(dynamicRegistry, artifactId -> List.of("alpha")));
+    final CapturingObserver<IndexDocumentsResponse> first = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-1", "alpha beta", 1, 0), first);
+    final CapturingObserver<IndexDocumentsResponse> second = new CapturingObserver<>();
+    service.indexDocuments(
+        DynamicSearchIndexRegistryTest.request(null, "doc-2", "gamma delta", 1, 0), second);
+    final String doomed = first.value.getIndex().getIndexId();
+    final String kept = second.value.getIndex().getIndexId();
+    service.setIndexAlias(SetIndexAliasRequest.newBuilder()
+        .setAlias("doomed-current").setIndexId(doomed).build(), new CapturingObserver<>());
+    service.setIndexAlias(SetIndexAliasRequest.newBuilder()
+        .setAlias("kept-current").setIndexId(kept).build(), new CapturingObserver<>());
+    final CapturingObserver<SetCollectionResponse> set = new CapturingObserver<>();
+    service.setCollection(SetCollectionRequest.newBuilder()
+        .setCollectionId("mixed")
+        .setDisplayName("Mixed")
+        .addMemberIndexIds(doomed)
+        .addMemberIndexIds(kept)
+        .build(), set);
+    assertNull(set.error);
+
+    final CapturingObserver<DeleteSearchIndexResponse> deleted = new CapturingObserver<>();
+    service.deleteSearchIndex(DeleteSearchIndexRequest.newBuilder()
+        .setIndexId(doomed).build(), deleted);
+    assertNull(deleted.error);
+    assertTrue(deleted.value.getDeleted());
+
+    // The alias that pointed at the deleted index is gone; the other one stays.
+    assertEquals(List.of("kept-current"),
+        aliases.aliases().stream().map(IndexAlias::getAlias).toList());
+    // The collection keeps its other member and can be saved again as reported.
+    final CapturingObserver<GetCollectionResponse> got = new CapturingObserver<>();
+    service.getCollection(GetCollectionRequest.newBuilder()
+        .setCollectionId("mixed").build(), got);
+    assertNull(got.error);
+    assertEquals(List.of(kept), got.value.getCollection().getMemberIndexIdsList());
+    final CapturingObserver<SetCollectionResponse> resaved = new CapturingObserver<>();
+    service.setCollection(SetCollectionRequest.newBuilder()
+        .setCollectionId("mixed")
+        .setDisplayName("Mixed")
+        .addAllMemberIndexIds(got.value.getCollection().getMemberIndexIdsList())
+        .build(), resaved);
+    assertNull(resaved.error);
   }
 
   @Test

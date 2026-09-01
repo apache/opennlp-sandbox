@@ -88,3 +88,26 @@ export function addFact(list: HTMLDListElement, term: string, value: string, hre
   container.append(name, detail);
   list.append(container);
 }
+
+/** Returns the singular for a count of one, otherwise the plural, regular unless given. */
+export function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
+  return count === 1 ? singular : pluralForm;
+}
+
+/** The gateway's wording for a gRPC call that ran out of time. */
+const DEADLINE_EXCEEDED = /deadline exceeded/i;
+
+/**
+ * Turns an analysis failure into a sentence for the status line. A gateway deadline
+ * comes back as a raw gRPC diagnostic naming internal addresses, so it is replaced by a
+ * plain explanation; the raw text stays available in the console.
+ */
+export function analysisFailureMessage(error: unknown): string {
+  const raw = errorMessage(error, "Analysis failed. Please try again.");
+  if (DEADLINE_EXCEEDED.test(raw)) {
+    console.warn(raw);
+    return "The server did not answer within the gateway's time limit. Try a smaller document, "
+      + "or raise --request-timeout-per-megabyte-seconds on the gateway.";
+  }
+  return raw;
+}
