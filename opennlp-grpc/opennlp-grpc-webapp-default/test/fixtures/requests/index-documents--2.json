@@ -1,0 +1,16 @@
+{
+  "indexId": "live-1",
+  "displayName": "Workbench index",
+  "documents": [
+    {
+      "docId": "fixture-1",
+      "rawText": "The cats sat on the mats."
+    }
+  ],
+  "embedding": {
+    "modelId": "minilm"
+  },
+  "chunkGroupIds": [
+    "sentence-chunks"
+  ]
+}

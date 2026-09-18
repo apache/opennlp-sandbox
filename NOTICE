@@ -11,6 +11,7 @@ List of third-party dependencies grouped by their license type.
 
     Apache License, Version 2.0
 
+        * Apache ECharts (npm:echarts:6.1.0 - https://echarts.apache.org/)
         * annotations-api (org.apache.tomcat:annotations-api:6.0.53 - http://tomcat.apache.org/)
         * Apache Commons CLI (commons-cli:commons-cli:1.11.0 - https://commons.apache.org/proper/commons-cli/)
         * Apache Commons Codec (commons-codec:commons-codec:1.22.1 - https://commons.apache.org/proper/commons-codec/)
@@ -252,6 +253,8 @@ List of third-party dependencies grouped by their license type.
 
     BSD 3-Clause License
 
+        * D3.js portions bundled by Apache ECharts (https://d3js.org/)
+        * zrender (npm:zrender:6.1.0 - https://ecomfe.github.io/zrender/)
         * ANTLR 4 Runtime (org.antlr:antlr4-runtime:4.11.1 - https://www.antlr.org/antlr4-runtime/)
         * asm (org.ow2.asm:asm:7.2 - http://asm.ow2.io/)
         * asm-analysis (org.ow2.asm:asm-analysis:7.2 - http://asm.ow2.io/)
@@ -270,6 +273,10 @@ List of third-party dependencies grouped by their license type.
         * extJWNL (net.sf.extjwnl:extjwnl:2.0.5 - http://extjwnl.sf.net/extjwnl)
         * extJWNL WordNet 3.1 Data (net.sf.extjwnl:extjwnl-data-wn31:1.2 - http://extjwnl.sf.net/extjwnl-data-wn31)
         * Java interface for fastText (com.github.vinhkhuc:jfasttext:0.4 - http://maven.apache.org)
+
+    Zero-Clause BSD License
+
+        * tslib (npm:tslib:2.3.0 - https://www.typescriptlang.org/)
 
     BSD-like
 
@@ -395,6 +402,7 @@ List of third-party dependencies grouped by their license type.
 
     Public Domain
 
+        * Alice's Adventures in Wonderland (Lewis Carroll, 1865)
         * JSON in Java (org.json:json:20260814 - https://github.com/douglascrockford/JSON-java)
 
     The Apache Software License, version 2.0
