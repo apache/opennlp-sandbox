@@ -1,0 +1,11 @@
+{
+  "collectionId": "legal",
+  "displayName": "Legal",
+  "memberIndexIds": [
+    "live-1"
+  ],
+  "dictionaryArtifactId": "dictionary-1",
+  "vocabularyArtifactId": "vocabulary-1",
+  "modelArtifactId": "static-model-1",
+  "driftNewTermThreshold": 25
+}

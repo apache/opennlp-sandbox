@@ -20,8 +20,8 @@ requires-python = ">=3.10"
 
 dependencies = [
   "grpcio>=1.60.0",
-  "grpcio-tools>=1.60.0"
+  "grpcio-tools>=1.60.0",
+  "protobuf>=4.25.0"
 ]
 description = "Apache OpenNLP Python gRPC examples"
 license = "Apache-2.0"
-

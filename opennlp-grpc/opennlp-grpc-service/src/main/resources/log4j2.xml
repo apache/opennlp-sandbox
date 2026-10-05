@@ -23,12 +23,15 @@
             <!--
                 The pattern can be adjusted as needed, see https://logging.apache.org/log4j/2.x/manual/layouts.html
             -->
-            <PatternLayout pattern="%m%n"/>
+            <PatternLayout pattern="%d{ISO8601} %-5level [%t] %c{1} - %m%n"/>
         </Console>
     </Appenders>
 
     <Loggers>
-        <Root level="DEBUG">
+        <!-- gRPC/Netty emit per-frame DEBUG traffic; keep them quiet by default. -->
+        <Logger name="io.grpc" level="WARN"/>
+        <Logger name="io.netty" level="WARN"/>
+        <Root level="INFO">
             <AppenderRef ref="STDOUT"/>
         </Root>
     </Loggers>
