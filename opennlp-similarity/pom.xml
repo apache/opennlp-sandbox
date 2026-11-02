@@ -30,7 +30,7 @@
     <org.json.version>20260814</org.json.version>
 
     <lucene.version>10.5.2</lucene.version>
-    <solr.version>9.10.1</solr.version>
+    <solr.version>10.1.0</solr.version>
     <tika.version>3.3.2</tika.version>
     
     <docx4j.version>11.5.14</docx4j.version>
