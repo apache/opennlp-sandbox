@@ -35,7 +35,7 @@ public abstract class AbstractCorefTest {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractCorefTest.class);
 
-  private static final String BASE_URL_MODELS_V15 = "https://opennlp.sourceforge.net/models-1.5/";
+  private static final String BASE_URL_MODELS_V15 = "https://downloads.sourceforge.net/project/opennlp/models-1.5/";
   protected static final Path OPENNLP_DIR = Paths.get(System.getProperty("user.home") + "/.opennlp/");
   protected static final String MODEL_DIR = "/models/coref/en";
   protected static final String MODEL_TRAINING_DIR = "/models/training";
