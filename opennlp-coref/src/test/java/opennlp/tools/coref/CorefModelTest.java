@@ -51,7 +51,7 @@ public class CorefModelTest extends AbstractCorefTest {
   void testThrowsWithNoLanguageCode() {
     final String modelDir = CorefModelTest.class.getResource(MODEL_DIR).getPath();
     assertNotNull(modelDir);
-    assertThrows(NullPointerException.class, () -> new CorefModel(null, modelDir));
+    assertThrows(IllegalArgumentException.class, () -> new CorefModel(null, modelDir));
   }
 
   @ParameterizedTest
